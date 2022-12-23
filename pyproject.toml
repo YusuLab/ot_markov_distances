@@ -1,0 +1,21 @@
+[tool.poetry]
+name = "ot-markov-distances"
+version = "0.1.0"
+description = ""
+authors = ["Tristan BRUGÈRE <67050900+nephanth@users.noreply.github.com>"]
+license = "Cecill-B"
+readme = "README.md"
+packages = [{include = "ot_markov_distances"}]
+
+[tool.poetry.dependencies]
+python = "^3.10"
+networkx = "^2.8.8"
+torch = "^1.13.1"
+
+
+[tool.poetry.group.dev.dependencies]
+jupyter = "^1.0.0"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
