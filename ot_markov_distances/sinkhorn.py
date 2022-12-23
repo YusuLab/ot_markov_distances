@@ -3,7 +3,6 @@ Differentiable sinkhorn divergence.
 This module provides a pytorch/autograd compatible implementation of sinkhorn
 divergence, 
 using the method described in :cite:`feydyInterpolatingOptimalTransport2019`
-much of the code is inspired from the version in the POT library :cite:`flamary2021pot`.
 """
 
 
@@ -53,22 +52,17 @@ class Sinkhorn(torch.autograd.Function):
             g_eps = torch.randn((*batch, 1, m))#g over epsilon + log_b
             #batch, m
             for _ in range(k):
-                f_eps = log_a - torch.logsumexp(mC_eps + g_eps, dim=-1, keepdim=True)
-                g_eps = log_b - torch.logsumexp(mC_eps + f_eps, dim=-2, keepdim=True)
-            log_P = mC_eps + f_eps + g_eps
-            #res = (C.log() + log_P).exp().sum((-1, -2))
-
+                f_eps =  - torch.logsumexp(mC_eps + g_eps + log_b, dim=-1, keepdim=True)
+                g_eps =  - torch.logsumexp(mC_eps + f_eps + log_a, dim=-2, keepdim=True)
+            log_P = mC_eps + f_eps + g_eps + log_a + log_b
             # Note: we dont actually need save_for_backwards here
             # we could say ctx.f_eps = f_eps etc.
             # save_for_backwards does sanity checks 
             # such as checking that the saved variables do not get changed inplace
             # (if you have output them, which is not the case)
             # see https://discuss.pytorch.org/t/how-to-save-a-list-of-integers-for-backward-when-using-cpp-custom-layer/25483/5
-            #print(f_eps * epsilon)
-            #f = epsilon *  (f_eps - log_a)
-            #g = epsilon * (g_eps - log_b)
-            f = - epsilon * torch.logsumexp(mC_eps + g_eps, dim=-1, keepdim=True).squeeze(-1)
-            g = - epsilon * torch.logsumexp(mC_eps + f_eps, dim=-2, keepdim=True).squeeze(-2)
+            f = epsilon * f_eps.squeeze(-1)
+            g = epsilon * g_eps.squeeze(-2)
             #print(res, (f.squeeze(-1) * a).sum(-1) + (g.squeeze(-2) * b).sum(-1))
             res = (f * a).sum(-1) + (g * b).sum(-1)
             ctx.save_for_backward(f, g, log_P)
