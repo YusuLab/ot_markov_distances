@@ -15,7 +15,7 @@ def markov_measure(M: Tensor) -> Tensor:
     """
     *b, n, n_ = M.shape
     assert n == n_
-    target = torch.zeros((*b, n+1, 1))
+    target = torch.zeros((*b, n+1, 1), device=M.device)
     target[..., n, :] = 1
     
     equations = (M.transpose(-1, -2) - torch.eye(n, device=M.device))
