@@ -33,15 +33,19 @@ def sinkhorn_internal(a: Tensor, b: Tensor, C: Tensor,
     *batch_, m = b.shape
     *batch__, n_, m_ = C.shape
     batch = torch.broadcast_shapes(batch, batch_, batch__)
+    device = a.device
+    dtype=a.dtype
     assert n == n_
     assert m == m_
     log_a = a.log()[..., :, None]
     log_b = b.log()[..., None, :]
     mC_eps = - C / epsilon
 
-    f_eps = torch.randn((*batch, n, 1))#f over epsilon + log_a 
+    f_eps = torch.randn((*batch, n, 1), device=device, dtype=dtype)
+    #f over epsilon + log_a 
     #batch, n
-    g_eps = torch.randn((*batch, 1, m))#g over epsilon + log_b
+    g_eps = torch.randn((*batch, 1, m), device=device, dtype=dtype)
+    #g over epsilon + log_b
     #batch, m
     for _ in range(k):
         f_eps =  - torch.logsumexp(mC_eps + g_eps + log_b, dim=-1, keepdim=True)
