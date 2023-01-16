@@ -18,8 +18,8 @@ def markov_measure(M: Tensor) -> Tensor:
     target = torch.zeros((*b, n+1, 1))
     target[..., n, :] = 1
     
-    equations = (M.transpose(-1, -2) - torch.eye(n))
-    equations = torch.cat([equations, torch.ones((*b, 1, n))], dim=-2)
+    equations = (M.transpose(-1, -2) - torch.eye(n, device=M.device))
+    equations = torch.cat([equations, torch.ones((*b, 1, n), device=M.device)], dim=-2)
     
     sol, *_ = torch.linalg.lstsq(equations, target)
     return sol.abs().squeeze(-1)
@@ -55,14 +55,8 @@ def wl_k(MX: Tensor, MY: Tensor,
     b_, m, m_ = MY.shape
     assert (n==n_) and (m == m_) and (b == b_)
     cost_matrix = (l1[:, :, None] - l2[:, None, :]).abs()
-    #print(cost_matrix)
     
     for i in range(k):
-        # for i in range(n):
-        #     cost_matrix[i] = sinkhorn(MX[i], MY.T, prev_matrix, reg=reg) #type:ignore
-        #print(cost_matrix)
-        #cost_matrix.register_hook(lambda x: print(f"step {i}: grad: {i}"))
-        #cost_matrix.register_hook(print)
         cost_matrix = sinkhorn(
                 MX[:, :, None, :], # b, n, 1, n
                 MY[:, None, :, :], # b, 1, m, m
@@ -75,10 +69,5 @@ def wl_k(MX: Tensor, MY: Tensor,
         muX = markov_measure(MX)
     if muY is None:
         muY = markov_measure(MY)
-    
-    #muX.register_hook(print)
-    #muY.register_hook(print)
-    #cost_matrix.register_hook(print)
-    #print(cost_matrix)
 
     return sinkhorn(muX, muY, cost_matrix, reg)
