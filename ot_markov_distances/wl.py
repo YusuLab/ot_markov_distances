@@ -2,28 +2,7 @@ import torch
 from torch import Tensor
 
 from .sinkhorn import sinkhorn
-
-def markov_measure(M: Tensor) -> Tensor:
-    """Takes a (batched) markov transition matrix, 
-    and outputs its stationary distribution
-
-    Args:
-        M: (*b, n, n) the markov transition matrix
-
-    Returns:
-        Tensor: m (*b, n)  so that m @ b  = m
-    """
-    *b, n, n_ = M.shape
-    assert n == n_
-    target = torch.zeros((*b, n+1, 1), device=M.device)
-    target[..., n, :] = 1
-    
-    equations = (M.transpose(-1, -2) - torch.eye(n, device=M.device))
-    equations = torch.cat([equations, torch.ones((*b, 1, n), device=M.device)], dim=-2)
-    
-    sol, *_ = torch.linalg.lstsq(equations, target)
-    return sol.abs().squeeze(-1)
-
+from .utils import markov_measure
 
 def wl_k(MX: Tensor, MY: Tensor, 
         l1: Tensor, l2: Tensor,

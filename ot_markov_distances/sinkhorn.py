@@ -15,7 +15,7 @@ def sinkhorn_internal(a: Tensor, b: Tensor, C: Tensor,
     """Same as sinkhorn, but returns f, g and P instead of the result
     Beware, this method does not have the shortcut differentiation
     
-    (It can still be differentiated by autograd though)
+    (It can still be differentiated by autograd though, if k is low)
 
     Args:
         a: (*batch, n) vector of the first distribution
