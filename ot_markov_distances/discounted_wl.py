@@ -5,10 +5,9 @@ from ml_lib.pipeline.annealing_scheduler import get_scheduler
 import torch
 from torch import Tensor
 from torch.nn import functional as F
-from utils import double_last_dimension
 
 from .sinkhorn import sinkhorn_internal, sinkhorn
-from .utils import markov_measure
+from .utils import markov_measure, double_last_dimension
 
 class DiscountedWlCostMatrix(torch.autograd.Function):
     
