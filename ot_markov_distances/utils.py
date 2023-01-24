@@ -4,14 +4,20 @@ from torch import Tensor
 
 def weighted_transition_matrix(G:nx.Graph, q: float):
     """Create a LMMC from a Graph
-    See def 5
+
+    See def 5 in :citet:`chenWLdistance2022`,
+    
+    It returns the transition matrix of the random walk on graph G, 
+    where the probability of staying in the same node is q,
+    and the probablity of transiting to one of the neighboring nodes
+    is equiprobable
 
     Args:
         G: the graph
         q: the q parameter for the q-markov chain
 
     Returns:
-        Array: [TODO:description]
+        Array: weighted transition matrix associated to q-random walks on G
     """
     A: Tensor= torch.as_tensor(nx.adjacency_matrix(G, weight=None).todense())#type:ignore
     n = A.shape[0]
