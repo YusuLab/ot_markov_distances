@@ -15,30 +15,44 @@ class ParametricMarkovMatrix(nn.Module):
     def forward(self) -> Tensor:
         return F.softmax(self.m / self.heat, dim=-1)
 
+class ParametricMatching(nn.Module):
+
+    m: nn.Parameter
+    heat: float = 1.
+
+    def __init__(self, size1:int, size2: int, *, heat:float = 1.):
+        super().__init__()
+        self.m = nn.Parameter(torch.randn(size1, size2))
+        self.heat = heat
+
+    def forward(self) -> Tensor:
+        return F.log_softmax(self.m / self.heat, dim=-1)
+
+    def get(self):
+        return F.softmax(self.m / self.heat, dim=-1)
+
 
 class ParametricMarkovMatrixWithMatchings(nn.Module):
-    m: ParametricMarkovMatrix
-    matchings: nn.ParameterList
-    matching_heat: float | list[float] = 1.
+    markov: ParametricMarkovMatrix
+    matchings: nn.ModuleList #[ParametricMatching] but no type arguments here
 
-    def __init__(self, size:int, *other_sizes, heat:float = 1., matching_heat: float|list[float] = 1.):
-        self.m = ParametricMarkovMatrix(size, heat=heat)
-        self.matching_heat = matching_heat
+    def __init__(self, size:int, *other_sizes: int, heat:float = 1., matching_heat: float|list[float] = 1.):
+        self.markov = ParametricMarkovMatrix(size, heat=heat)
+        self.matchings = nn.ModuleList()
+        
+        match matching_heat:
+            case *heats:
+                matching_heats = heats
+            case float():
+                matching_heats = [matching_heat] * len(other_sizes)
 
-        self.matchings = nn.ParameterList()
-
-
-        for other_size in other_sizes:
-            self.matchings.append(torch.randn((size, other_size)))
+        for other_size, h in zip(other_sizes, matching_heats):
+            self.matchings.append(ParametricMatching(size, other_size, heat=h))
 
     def forward(self) -> tuple[Tensor, ...]:
-        matching_heat: list[float]
-        if isinstance(self.matching_heat, float):
-            matching_heat = [self.matching_heat]*len(self.matchings)
-        else:
-            matching_heat = self.matching_heat
-        assert len(matching_heat) == len(self.matchings)
+        return self.markov(), *[m() for m in self.matchings]
 
-        return self.m(), *[F.softmax(matching/heat, dim = -1 ) 
-                for matching, heat in zip(self.matchings, matching_heat)]
+    def get(self) -> tuple[Tensor, ...]:
+        return self.markov(), *[m.get() for m in self.matchings]
+
 
