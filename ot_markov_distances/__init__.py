@@ -1,8 +1,11 @@
 from .sinkhorn import sinkhorn
 from .wl import wl_k, markov_measure
+from .discounted_wl import wl_reg_infty, wl_delta_k
 
 __all__: list[str] = [
     "sinkhorn",
     "wl_k", 
-    "markov_measure"
+    "markov_measure", 
+    "wl_reg_infty", 
+    "wl_delta_k"
 ]
