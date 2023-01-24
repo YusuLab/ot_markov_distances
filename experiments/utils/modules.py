@@ -41,7 +41,7 @@ class ParametricMarkovMatrixWithMatchings(nn.Module):
         self.matchings = nn.ModuleList()
         
         match matching_heat:
-            case *heats:
+            case [*heats]:
                 matching_heats = heats
             case float():
                 matching_heats = [matching_heat] * len(other_sizes)
