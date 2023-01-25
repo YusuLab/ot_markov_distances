@@ -1,8 +1,11 @@
 import torch
 from torch import nn, Tensor
 from torch.nn import functional as F
+import numpy as np
 
 from ml_lib.misc import auto_repr
+
+from ot_markov_distances.utils import draw_markov
 
 @auto_repr("size")
 class ParametricMarkovMatrix(nn.Module):
@@ -66,4 +69,15 @@ class ParametricMarkovMatrixWithMatchings(nn.Module):
     def get(self) -> tuple[Tensor, ...]:
         return self.markov(), *[m.get() for m in self.matchings]
 
+    def draw(self, original_positions, ax=None):
+        if ax is None:
+            import matplotlib.pyplot  as plt #type:ignore
+            ax = plt.gca()
+
+        markov, matching1, *_ = self.get()
+
+        positions = np.einsum("mi,id->md",matching1, original_positions)
+        pos = {i: positions[i] for i in range(len(positions))}
+
+        draw_markov(markov, pos, ax=ax)
 
