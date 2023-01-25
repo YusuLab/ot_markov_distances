@@ -68,7 +68,7 @@ def double_last_dimension(t: Tensor) -> Tensor:
     new_tensor = torch.diagonal_scatter(new_tensor, t, dim1=-2, dim2=-1)
     return new_tensor
 
-def draw_markov(M: Tensor,pos, node_color=None, ax=None):
+def draw_markov(M: Tensor,pos=None, node_color=None, ax=None):
     import numpy as np
     match node_color:
         case None:
@@ -81,6 +81,8 @@ def draw_markov(M: Tensor,pos, node_color=None, ax=None):
             raise TypeError
     
     G = nx.from_numpy_array(M.numpy(force=True), create_using=nx.DiGraph)
+    if pos is None:
+        pos  = nx.spring_layout(G)
     if ax is None:
         import matplotlib.pyplot as plt #type:ignore
         ax = plt.gca()
