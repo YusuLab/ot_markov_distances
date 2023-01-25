@@ -36,7 +36,7 @@ class ParametricMatching(nn.Module):
         self.heat = heat
 
     def forward(self) -> Tensor:
-        return F.log_softmax(self.m / self.heat, dim=-1)
+        return - F.log_softmax(self.m / self.heat, dim=-1)
 
     def get(self):
         return F.softmax(self.m / self.heat, dim=-1)
