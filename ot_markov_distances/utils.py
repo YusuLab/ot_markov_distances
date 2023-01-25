@@ -20,14 +20,14 @@ def weighted_transition_matrix(G:nx.Graph, q: float):
         Array: weighted transition matrix associated to q-random walks on G
     """
     A: Tensor= torch.as_tensor(nx.adjacency_matrix(G, weight=None).todense())#type:ignore
-    n = A.shape[0]
-    D = A.sum(1)
+    n, _n = A.shape; assert n == _n
+    D = A.sum(1, keepdim=True)
     mask = D == 0
     D[mask] = 1
     D = D.reshape((A.shape[0], 1))
     A = (1 - q)*A/D
     A = A + q * torch.eye(n)
-    single_node_inds = torch.nonzero(mask)[0]
+    single_node_inds = torch.nonzero(mask)[:, 0]
     A[single_node_inds, single_node_inds] = 1
     return A
 
