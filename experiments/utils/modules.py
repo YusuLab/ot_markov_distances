@@ -37,6 +37,7 @@ class ParametricMarkovMatrixWithMatchings(nn.Module):
     matchings: nn.ModuleList #[ParametricMatching] but no type arguments here
 
     def __init__(self, size:int, *other_sizes: int, heat:float = 1., matching_heat: float|list[float] = 1.):
+        super().__init__()
         self.markov = ParametricMarkovMatrix(size, heat=heat)
         self.matchings = nn.ModuleList()
         
