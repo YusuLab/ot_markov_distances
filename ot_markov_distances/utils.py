@@ -68,4 +68,25 @@ def double_last_dimension(t: Tensor) -> Tensor:
     new_tensor = torch.diagonal_scatter(new_tensor, t, dim1=-2, dim2=-1)
     return new_tensor
 
-
+def draw_markov(M: Tensor,pos, node_color=None, ax=None):
+    import numpy as np
+    match node_color:
+        case None:
+            nc = {}
+        case np.ndarray():
+            nc = {"node_color":node_color}
+        case torch.Tensor():
+            nc = {"node_color":node_color.numpy(force=True)}
+        case _:
+            raise TypeError
+    
+    G = nx.from_numpy_array(M.numpy(force=True), create_using=nx.DiGraph)
+    if ax is None:
+        import matplotlib.pyplot as plt #type:ignore
+        ax = plt.gca()
+    nx.draw_networkx_edges(G, 
+                pos,
+                ax=ax,
+                alpha=np.array(list(nx.get_edge_attributes(G, "weight").values())),
+                    )
+    nx.draw_networkx_nodes(G, pos, ax=ax, **nc)
