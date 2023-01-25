@@ -21,7 +21,7 @@ def nn_graph(samples, k) -> nx.Graph:
     return G
 
 def distance_graph(samples, d) -> nx.Graph:
-    distance_matrix = (samples[:, None, :]- samples[None, :, :]).square().mean(-1)
+    distance_matrix = np.square(samples[:, None, :]- samples[None, :, :]).mean(-1)
     connected_matrix = distance_matrix <= d*d
     G: nx.Graph = nx.from_numpy_array(connected_matrix)
     for (_, data), position in zip(G.nodes(data=True), samples):
