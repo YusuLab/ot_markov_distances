@@ -16,6 +16,7 @@ ml_lib = { git="https://github.com/tbrugere/ml_lib.git", branch="main" }
 
 [tool.poetry.group.dev.dependencies]
 jupyter = "^1.0.0"
+scikit-learn = "^1.2.1"
 
 [build-system]
 requires = ["poetry-core"]
