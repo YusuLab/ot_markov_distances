@@ -1,4 +1,6 @@
 from typing import Literal
+import math
+
 import networkx as nx
 import sklearn.neighbors 
 import numpy as np
@@ -35,5 +37,28 @@ def circle_graph(n, radius=1, noise=.01 , kind:Literal["nn", "distance"]="nn", k
         case "nn":
             return nn_graph(sample, k)
         case "distance":
-            return distance_graph(sample, .5 * radius)
+            return distance_graph(sample, .7 * radius)
 
+
+def FGW_build_noisy_circular_graph(N=20,mu=0,sigma=0.3,structure_noise_p=0.):
+    """Credit: this code is from the Fused Gromov wasserstein code base, 
+    (https://github.com/tvayer/FGW)
+    slightly modified
+
+    modifications:
+        - returns a networkx.Grahp
+        - attributes are the two coordinates
+        - no "with_noise" parameter. to disable noise, just set sigma to 0.
+        - also simplified edge cases with good old modulo trick
+
+    """
+    g=nx.Graph()
+    g.add_nodes_from(range(N))
+    for i in range(N):
+        noise = rng.normal(mu, sigma, 2) 
+        angle = 2 * i * np.pi / N
+        g.nodes[i]["attr"] = np.array([np.cos(angle), np.sin(angle)]) + noise
+        g.add_edge(i,(i+1)%N)
+        if rng.random() < structure_noise_p:
+            g.add_edge(i,(i+2)%N)
+    return g
