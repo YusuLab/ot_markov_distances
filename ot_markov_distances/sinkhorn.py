@@ -4,10 +4,12 @@ This module provides a pytorch/autograd compatible implementation of sinkhorn
 divergence, 
 using the method described in :cite:`feydyInterpolatingOptimalTransport2019`
 """
-
+from typing import Optional
 
 import torch
 from torch import Tensor
+
+from . import utils
 
 
 def sinkhorn_internal(a: Tensor, b: Tensor, C: Tensor, 
@@ -15,7 +17,7 @@ def sinkhorn_internal(a: Tensor, b: Tensor, C: Tensor,
     """Same as sinkhorn, but returns f, g and P instead of the result
     Beware, this method does not have the shortcut differentiation
     
-    (It can still be differentiated by autograd though, if k is low)
+    (It can still be differentiated by autograd though)
 
     Args:
         a: (*batch, n) vector of the first distribution
@@ -154,3 +156,4 @@ def sinkhorn(a: Tensor, b: Tensor, C: Tensor,
         Tensor: (*batch). result of the sinkhorn computation
     """
     return Sinkhorn.apply(a, b, C, epsilon, k)
+
