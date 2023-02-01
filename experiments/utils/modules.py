@@ -1,9 +1,11 @@
+from typing import overload, Optional
+
 import torch
 from torch import nn, Tensor
 from torch.nn import functional as F
 import numpy as np
 
-from ml_lib.misc import auto_repr
+from ml_lib.misc import auto_repr, all_equal
 
 from ot_markov_distances.utils import draw_markov
 
@@ -81,3 +83,74 @@ class ParametricMarkovMatrixWithMatchings(nn.Module):
 
         draw_markov(markov, pos, ax=ax)
 
+class ParametricMarkovMatrixWithLabels(nn.Module):
+
+    markov: ParametricMarkovMatrix
+    label: nn.Parameter
+
+    others: Optional[list[Tensor]]
+
+    @overload
+    def __init__(self, size:int, label_size:int, /):
+        ...
+
+    @overload
+    def __init__(self, size:int, *target_labels: Tensor):
+        ...
+
+    def __init__(self, size:int, *target_labels):
+        """If initialized with target labels, the forward method will return cost matrices.
+        Otherwise the label will be returned
+        """
+        super().__init__()
+        self.markov = ParametricMarkovMatrix(size)
+        match target_labels:
+            case [int(label_size)]:
+                self.label = nn.Parameter(torch.randn(size, label_size))
+                self.others = None
+            case [*tensors]:
+                tensors = [tensor.clone() for tensor in tensors]
+                label_sizes = [t.shape[-1] for t in tensors]
+                assert all_equal(label_sizes)
+                label_size = label_sizes.pop()
+                self.others = tensors
+                for i, t in enumerate(tensors):
+                    self.register_buffer(f"other{i}", t)
+                self.label = nn.Parameter(torch.randn(size, label_size))
+
+    def forward(self):
+        if self.others is None:
+            return self.markov(), self.label
+
+        return self.markov(), *[
+                (self.label[:, None, :] - other[None, :, :]).square().sum(-1) 
+                for other in self.others]
+    
+    def get(self) -> tuple[Tensor, ...]:
+        return self.markov(), self.label
+    
+    def update_others(self):
+        if self.others is None:
+            return
+        self.others = [self.get_buffer(f"other{i}") for i in
+                      range(len(self.others))]
+    
+    def to(self, *args, **kwargs):
+        r = super().to(*args, **kwargs)
+        r.update_others()
+        return r
+        
+    
+    def draw(self, positions=None, ax=None):
+        #if there are no positions, 
+        #assume the first two coordinates of the label are
+        #positions
+        if ax is None:
+            import matplotlib.pyplot  as plt #type:ignore
+            ax = plt.gca()
+            
+        markov, label = self.get()
+        if positions is None:
+            positions = label[:, :2].numpy(force=True)
+        pos = {i: positions[i] for i in range(len(positions))}
+        draw_markov(markov, pos, ax=ax)
