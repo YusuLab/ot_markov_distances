@@ -69,7 +69,11 @@ def add_er_noise(G, p):
     """ Adds Erdos-Renyi type noise to a graph G
     adds or remove k random edges from graph
     """
+    G = nx.convert_node_labels_to_integers(G)
     G_matrix = nx.to_numpy_array(G)
     noise = nx.to_numpy_array(nx.erdos_renyi_graph(len(G), p))
     new_G_matrix = np.logical_xor(G_matrix, noise)
-    return nx.from_numpy_array(new_G_matrix)
+    new_G = nx.create_empty_copy(G)
+    edges = nx.from_numpy_array(new_G_matrix, create_using=type(G)).edges()
+    new_G.add_edges_from(edges)
+    return new_G
