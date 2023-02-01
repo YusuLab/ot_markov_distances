@@ -1,8 +1,10 @@
 from typing import Literal
 import math
 
+
 import networkx as nx
 import sklearn.neighbors 
+import torch
 import numpy as np
 from numpy.random import default_rng
 rng = default_rng()
@@ -77,3 +79,9 @@ def add_er_noise(G, p):
     edges = nx.from_numpy_array(new_G_matrix, create_using=type(G)).edges()
     new_G.add_edges_from(edges)
     return new_G
+
+def get_label_matrix(G, label="attr"):
+    values = [ torch.as_tensor(v) for v in nx.get_node_attributes(G, label).values()]
+    values = torch.stack(values, dim=0)
+    values = values.to(torch.float32)
+    return values
