@@ -46,7 +46,7 @@ def FGW_build_noisy_circular_graph(N=20,mu=0,sigma=0.3,structure_noise_p=0.):
     slightly modified
 
     modifications:
-        - returns a networkx.Grahp
+        - returns a networkx.Graph
         - attributes are the two coordinates
         - no "with_noise" parameter. to disable noise, just set sigma to 0.
         - also simplified edge cases with good old modulo trick
@@ -62,3 +62,13 @@ def FGW_build_noisy_circular_graph(N=20,mu=0,sigma=0.3,structure_noise_p=0.):
         if rng.random() < structure_noise_p:
             g.add_edge(i,(i+2)%N)
     return g
+
+
+def add_er_noise(G, p):
+    """ Adds Erdos-Renyi type noise to a graph G
+    adds or remove k random edges from graph
+    """
+    G_matrix = nx.to_numpy_array(G)
+    noise = nx.to_numpy_array(nx.erdos_renyi_graph(len(G), p))
+    new_G_matrix = np.logical_xor(G_matrix, noise)
+    return nx.from_numpy_array(new_G_matrix)
