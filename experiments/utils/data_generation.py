@@ -58,6 +58,7 @@ def FGW_build_noisy_circular_graph(N=20,mu=0,sigma=0.3,structure_noise_p=0.):
         noise = rng.normal(mu, sigma, 2) 
         angle = 2 * i * np.pi / N
         g.nodes[i]["attr"] = np.array([np.cos(angle), np.sin(angle)]) + noise
+        g.nodes[i]["pos"] = g.nodes[i]["attr"]
         g.add_edge(i,(i+1)%N)
         if rng.random() < structure_noise_p:
             g.add_edge(i,(i+2)%N)
