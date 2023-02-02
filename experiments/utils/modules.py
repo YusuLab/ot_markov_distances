@@ -91,19 +91,19 @@ class ParametricMarkovMatrixWithLabels(nn.Module):
     others: Optional[list[Tensor]]
 
     @overload
-    def __init__(self, size:int, label_size:int, /):
+    def __init__(self, size:int, label_size:int, /, *, heat=1.):
         ...
 
     @overload
-    def __init__(self, size:int, *target_labels: Tensor):
+    def __init__(self, size:int, *target_labels: Tensor, heat=1.):
         ...
 
-    def __init__(self, size:int, *target_labels):
+    def __init__(self, size:int, *target_labels, heat=1.):
         """If initialized with target labels, the forward method will return cost matrices.
         Otherwise the label will be returned
         """
         super().__init__()
-        self.markov = ParametricMarkovMatrix(size)
+        self.markov = ParametricMarkovMatrix(size, heat=heat)
         match target_labels:
             case [int(label_size)]:
                 self.label = nn.Parameter(torch.randn(size, label_size))
