@@ -85,3 +85,8 @@ def get_label_matrix(G, label="attr"):
     values = torch.stack(values, dim=0)
     values = values.to(torch.float32)
     return values
+
+
+def graphon_sample(M):
+    M_sampled = rng.random(M.shape)<M
+    return nx.from_numpy_array(M_sampled)
