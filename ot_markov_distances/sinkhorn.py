@@ -14,22 +14,22 @@ from . import utils
 
 def sinkhorn_internal(a: Tensor, b: Tensor, C: Tensor, 
                       epsilon: float, k: int=100):
-    """Same as sinkhorn, but returns f, g and P instead of the result
+    r"""Same as sinkhorn, but returns f, g and P instead of the result
     Beware, this method does not have the shortcut differentiation
     
     (It can still be differentiated by autograd though)
 
     Args:
-        a: (*batch, n) vector of the first distribution
-        b: (*batch, m) vector of the second distribtion
-        C: (*batch, n, m) cost matrix
+        a: (\*batch, n) vector of the first distribution
+        b: (\*batch, m) vector of the second distribtion
+        C: (\*batch, n, m) cost matrix
         epsilon: regularisation term for sinkhorn
         k: number of sinkhorn iterations (default 100)
 
     Returns:
-        f: (*batch, n)
-        g: (*batch, m)
-        log_P: (*batch, n, m)
+        f: (\*batch, n)
+        g: (\*batch, m)
+        log_P: (\*batch, n, m)
     """
     *batch, n = a.shape
     *batch_, m = b.shape
@@ -69,7 +69,7 @@ class Sinkhorn(torch.autograd.Function):
     """Computes Sinkhorn divergence"""
     @staticmethod
     def forward(ctx, a: Tensor, b: Tensor, C: Tensor, 
-        epsilon: float, k: int=100):
+        epsilon: float, k: int=100) -> Tensor:
         r"""Batched version of sinkhorn distance
 
         The 3 batch dims will be broadcast to each other. 
@@ -77,15 +77,15 @@ class Sinkhorn(torch.autograd.Function):
         so it should be reasonably fast on gpu
 
         Args:
-            a: (*batch, n) First distribution. 
-            b: (*batch, m) Second distribution
-            C: (*batch, n, m) Cost matrix
+            a: (\*batch, n) First distribution. 
+            b: (\*batch, m) Second distribution
+            C: (\*batch, n, m) Cost matrix
             epsilon: Regularization parameter
             k: number of iteration (this version does not check for convergence)
             return_solutions: whether to return P, f and g
 
         Returns:
-            divergence: (*batch) $divergence[*i] = OT^\epsilon(a[*i], b[*i], C[*i])$
+            divergence: (\*batch) :math:`\text{divergence}[*i] = OT^\epsilon(a[*i], b[*i], C[*i])`
         """
 
         with torch.no_grad():
@@ -112,7 +112,7 @@ class Sinkhorn(torch.autograd.Function):
         :cite:`peyreComputationalOT2018`
 
         This allows us to shortcut the backward pass. 
-        Note that `citet`:peyreComputationalOT2018: discourage doing this
+        Note that :cite:t:`peyreComputationalOT2018` discourage doing this
         if the sinkhorn iterations do not converge
         """
         #output gradient d _ res y . so 
@@ -136,24 +136,24 @@ class Sinkhorn(torch.autograd.Function):
 
 def sinkhorn(a: Tensor, b: Tensor, C: Tensor, 
              epsilon: float, k: int=100) -> Tensor:
-    """Differentiable sinkhorn distance
+    r"""Differentiable sinkhorn distance
 
     This is a pytorch implementation of sinkhorn, 
-    batched (over `a`, `b` and `C`) 
+    batched (over ``a``, ``b`` and ``C``) 
 
     It is compatible with pytorch autograd gradient computations.
 
     See the documentation of :class:`Sinkhorn` for details.
 
     Args:
-        a: (*batch, n) vector of the first distribution
-        b: (*batch, m) vector of the second distribtion
-        C: (*batch, n, m) cost matrix
+        a: (\*batch, n) vector of the first distribution
+        b: (\*batch, m) vector of the second distribtion
+        C: (\*batch, n, m) cost matrix
         epsilon: regularisation term for sinkhorn
         k: number of sinkhorn iterations (default 100)
 
     Returns:
-        Tensor: (*batch). result of the sinkhorn computation
+        Tensor: (\*batch). result of the sinkhorn computation
     """
     return Sinkhorn.apply(a, b, C, epsilon, k)
 

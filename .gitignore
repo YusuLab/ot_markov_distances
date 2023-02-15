@@ -1,3 +1,9 @@
+# generated docs
+docs/
+
+# make timestamps
+.make/
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]

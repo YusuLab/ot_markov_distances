@@ -5,7 +5,10 @@ from torch import Tensor
 def weighted_transition_matrix(G:nx.Graph, q: float):
     """Create a LMMC from a Graph
 
-    See def 5 in :citet:`chenWLdistance2022`,
+    This function is largely inspired from the same one here
+    https://github.com/chens5/WL-distance/blob/main/utils/utils.py
+
+    See def 5 in :cite:t:`chen2022weisfeilerlehman`,
     
     It returns the transition matrix of the random walk on graph G, 
     where the probability of staying in the same node is q,
@@ -32,14 +35,14 @@ def weighted_transition_matrix(G:nx.Graph, q: float):
     return A
 
 def markov_measure(M: Tensor) -> Tensor:
-    """Takes a (batched) markov transition matrix, 
+    r"""Takes a (batched) markov transition matrix, 
     and outputs its stationary distribution
 
     Args:
-        M: (*b, n, n) the markov transition matrix
+        M: (\*b, n, n) the markov transition matrix
 
     Returns:
-        Tensor: m (*b, n)  so that m @ b  = m
+        Tensor: m (\*b, n)  so that m @ b  = m
     """
     *b, n, n_ = M.shape
     assert n == n_
