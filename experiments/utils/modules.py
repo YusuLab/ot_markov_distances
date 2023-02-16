@@ -48,7 +48,7 @@ class ParametricMatching(nn.Module):
                 return - F.log_softmax(self.m / self.heat, dim=-1)
             case "full":
                 m = self.m.view(-1)
-                m = F.log_softmax(m / self.heat)
+                m = - F.log_softmax(m / self.heat, dim=-1)
                 return m.view(self.size1, self.size2)
 
     def get(self):
