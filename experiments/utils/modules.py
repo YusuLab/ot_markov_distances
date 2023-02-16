@@ -87,6 +87,8 @@ class ParametricMarkovMatrixWithMatchings(nn.Module):
         markov, matching1, *_ = self.get()
 
         positions = np.einsum("mi,id->md",matching1.numpy(force=True), original_positions)
+        if self.matchings[0].type == "full":
+            positions = positions / matching1.sum(-1, keepdim=True).numpy(force=True)
         pos = {i: positions[i] for i in range(len(positions))}
 
         draw_markov(markov, pos, ax=ax)
