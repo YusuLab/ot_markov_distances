@@ -1,4 +1,4 @@
-from typing import overload, Optional
+from typing import overload, Optional, Literal
 
 import torch
 from torch import nn, Tensor
@@ -32,16 +32,24 @@ class ParametricMatching(nn.Module):
     size2: int
     m: nn.Parameter
     heat: float = 1.
+    type: Literal["rows", "full"] = "rows"
 
-    def __init__(self, size1:int, size2: int, *, heat:float = 1.):
+    def __init__(self, size1:int, size2: int, *, heat:float = 1., type: Literal["rows", "full"] = "rows"):
         super().__init__()
         self.size1 = size1
         self.size2 = size2
         self.m = nn.Parameter(torch.randn(size1, size2))
         self.heat = heat
+        self.type = type
 
     def forward(self) -> Tensor:
-        return - F.log_softmax(self.m / self.heat, dim=-1)
+        match self.type:
+            case "rows":
+                return - F.log_softmax(self.m / self.heat, dim=-1)
+            case "full":
+                m = self.m.view(-1)
+                m = F.log_softmax(m / self.heat)
+                return m.view(self.size1, self.size2)
 
     def get(self):
         return F.softmax(self.m / self.heat, dim=-1)
@@ -51,7 +59,7 @@ class ParametricMarkovMatrixWithMatchings(nn.Module):
     markov: ParametricMarkovMatrix
     matchings: nn.ModuleList #[ParametricMatching] but no type arguments here
 
-    def __init__(self, size:int, *other_sizes: int, heat:float = 1., matching_heat: float|list[float] = 1.):
+    def __init__(self, size:int, *other_sizes: int, heat:float = 1., matching_heat: float|list[float] = 1., matching_type: Literal["rows", "full"] = "rows"):
         super().__init__()
         self.markov = ParametricMarkovMatrix(size, heat=heat)
         self.matchings = nn.ModuleList()
@@ -63,7 +71,7 @@ class ParametricMarkovMatrixWithMatchings(nn.Module):
                 matching_heats = [matching_heat] * len(other_sizes)
 
         for other_size, h in zip(other_sizes, matching_heats):
-            self.matchings.append(ParametricMatching(size, other_size, heat=h))
+            self.matchings.append(ParametricMatching(size, other_size, heat=h, type=matching_type))
 
     def forward(self) -> tuple[Tensor, ...]:
         return self.markov(), *[m() for m in self.matchings]
