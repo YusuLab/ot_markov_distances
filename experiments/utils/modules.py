@@ -52,7 +52,13 @@ class ParametricMatching(nn.Module):
                 return m.view(self.size1, self.size2)
 
     def get(self):
-        return F.softmax(self.m / self.heat, dim=-1)
+        match self.type:
+            case "rows":
+                return F.softmax(self.m / self.heat, dim=-1)
+            case "full":
+                m = self.m.view(-1)
+                m = F.softmax(m / self.heat, dim=-1)
+                return m.view(self.size1, self.size2)
 
 
 class ParametricMarkovMatrixWithMatchings(nn.Module):
