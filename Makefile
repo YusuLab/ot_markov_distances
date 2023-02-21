@@ -12,10 +12,12 @@ ALL_DOC_SOURCE_FILES=$(shell find staticdocs -type f)
 .make:
 	mkdir -p $@
 
-all: .make/build-docs
+all: .make/build-docs .make/run-tests
 
-run-tests: deps dev-deps 
-	$(RUN_IN_ENV) pytest --cov=carsreco --cov-report xml
+run-tests: .make/run-tests
+
+.make/run-tests: .make/deps .make/test-deps |.make
+	$(RUN_IN_ENV) pytest --cov=$(PACKAGE) --cov-report xml
 
 .make/deps: pyproject.toml | .make
 	poetry install
@@ -66,4 +68,4 @@ clean:
 	rm -rf .make
 
 
-.PHONY: clean docs docs-dir autodoc nbconvert docgen local-deploy run-server
+.PHONY: clean run-tests
