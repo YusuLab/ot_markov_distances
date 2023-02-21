@@ -6,11 +6,10 @@ The depth-:math:`\infty` version can be computed with the function :func:`wl_reg
 The depth-:math:`k` version can be computed with the function :func:`wl_reg_k`.
 """
 
-from typing import Literal
+# from typing import Literal
 import warnings
 
 from ml_lib.misc import all_equal, debug_time
-from ml_lib.pipeline.annealing_scheduler import get_scheduler
 import torch
 from torch import Tensor, FloatTensor
 from torch.nn import functional as F
@@ -35,24 +34,25 @@ def discounted_wl_cost_matrix_step(MX: FloatTensor,
                                    cost_matrix_index: Tensor|None=None,
                                    cost_matrix_mask: Tensor|None=None,
                                    save_to_ctx=None
-                                   ) -> Tensor:
+                                   ) -> tuple[Tensor, bool]:
     """One step for the discounted WL cost matrix
 
     will save the 
 
     Args:
-        MX : [TODO:description]
-        MY : [TODO:description]
-        cost_matrix : [TODO:description]
-        sinkhorn_reg : [TODO:description]
-        delta : [TODO:description]
-        one_minus_delta : [TODO:description]
-        sinkhorn_max_iter : [TODO:description]
-        cost_matrix_index: [TODO:description]
+        MX : Fist markov matrix (either a dense or a sparse version)
+        MY : Second markov matrix (either a dense or a sparse version)
+        cost_matrix : current cost matrix
+        sinkhorn_reg : regularization parameter for the sinkhorn algorithm
+        delta : delta parameter for the WL distance
+        one_minus_delta : 1 - delta
+        sinkhorn_max_iter : maximum number of iterations for the sinkhorn algorithm
+        cost_matrix_index: index for the cost matrix if the sparse version is used
         save_to_ctx : eventually a context the f, g and log_P will be saved to
 
     Returns:
-        [TODO:description]
+        new_cost_matrix: the cost matrix after update
+        sinkhorn_converged: whether the sinkhorn algorithm converged
     """
     b, n, one, dx = MX.shape
     b_, one_, m, dy = MY.shape
@@ -73,12 +73,13 @@ def discounted_wl_cost_matrix_step(MX: FloatTensor,
         cost_matrix_sparse = cost_matrix
     
     
-    f, g, log_P = sinkhorn_internal(
+    f, g, log_P, sinkhorn_converged = sinkhorn_internal(
             MX, # b, n, 1, dx
             MY, # b, 1, m, dy
             cost_matrix_sparse, # b, n, m, dx, dy
             epsilon=sinkhorn_reg, 
-            k= sinkhorn_max_iter
+            k= sinkhorn_max_iter, 
+            return_has_converged=True
     )
 
     sinkhorn_result = ((f*MX).sum(-1)
@@ -94,7 +95,7 @@ def discounted_wl_cost_matrix_step(MX: FloatTensor,
             save_to_ctx.g = g
         save_to_ctx.log_P = log_P
         
-    return new_cost_matrix
+    return new_cost_matrix, sinkhorn_converged
 
 
 class DiscountedWlCostMatrix(torch.autograd.Function):
@@ -107,9 +108,9 @@ class DiscountedWlCostMatrix(torch.autograd.Function):
         max_iter: int = 50,
         convergence_threshold_rtol = .005,
         convergence_threshold_atol = 1e-6,
-        sinkhorn_iter: int= 100,
+        max_sinkhorn_iter: int= 100,
         return_differences: bool=False,
-        sinkhorn_iter_scheduler="constant",
+        sinkhorn_iter_schedule = 10,
         x_is_sparse:bool|None=None,
         y_is_sparse:bool|None=None,
         ):
@@ -156,8 +157,6 @@ class DiscountedWlCostMatrix(torch.autograd.Function):
             assert max_iter >= 1, "Can’t really converge without iterating"
 
             one_minus_delta = 1 - delta
-            scheduler = get_scheduler(sinkhorn_iter_scheduler, 
-                                      T_0=max_iter, beta_0=sinkhorn_iter)
             
             differences = []
             debug_time()
@@ -179,19 +178,28 @@ class DiscountedWlCostMatrix(torch.autograd.Function):
             else:
                 c_index, c_mask = None, None
 
+            if sinkhorn_iter_schedule != 0:
+                sinkhorn_iter = 1
+            else: sinkhorn_iter = max_sinkhorn_iter
+
+
             for _ in range(max_iter):
                 # sinkhorn pass
-                new_cost_matrix = discounted_wl_cost_matrix_step(
+                new_cost_matrix, sinkhorn_converged = discounted_wl_cost_matrix_step(
                         mx_dense, my_dense, cost_matrix, 
                         distance_matrix,
                         sinkhorn_reg, delta, one_minus_delta,
-                        sinkhorn_max_iter=int(scheduler.step()) + 1, 
+                        sinkhorn_max_iter=sinkhorn_iter, 
                         cost_matrix_index = c_index, 
                         cost_matrix_mask = c_mask, 
                         save_to_ctx=ctx
                         )
+                # update sinkhorn iter
+                if sinkhorn_iter_schedule != 0 and not sinkhorn_converged:
+                    sinkhorn_iter = min(sinkhorn_iter + sinkhorn_iter_schedule, max_sinkhorn_iter)
                 # stop condition 
-                if torch.allclose(cost_matrix, new_cost_matrix, 
+                if (sinkhorn_converged or sinkhorn_iter == max_sinkhorn_iter) \
+                        and torch.allclose(cost_matrix, new_cost_matrix, 
                             rtol=convergence_threshold_rtol,
                             atol=convergence_threshold_atol):
                     break
@@ -308,7 +316,7 @@ def discounted_wl_infty_cost_matrix(
         convergence_threshold_atol: float = 1e-6,
         sinkhorn_iter: int= 100,
         return_differences: bool=False,
-        sinkhorn_iter_scheduler="constant"
+        sinkhorn_iter_schedule=10
         ):
     return DiscountedWlCostMatrix.apply(MX, MY, 
         distance_matrix,
@@ -319,7 +327,7 @@ def discounted_wl_infty_cost_matrix(
         convergence_threshold_atol,
         sinkhorn_iter,
         return_differences,
-        sinkhorn_iter_scheduler)
+        sinkhorn_iter_schedule)
 
 
 def discounted_wl_infty(MX: Tensor, MY: Tensor, 
@@ -333,7 +341,7 @@ def discounted_wl_infty(MX: Tensor, MY: Tensor,
         convergence_threshold_atol = 1e-6,
         sinkhorn_iter: int= 100,
         return_differences: bool=False,
-        sinkhorn_iter_scheduler="constant"
+        sinkhorn_iter_schedule=10
         ):
     cost_matrix =  discounted_wl_infty_cost_matrix(
         MX, MY, 
@@ -345,7 +353,7 @@ def discounted_wl_infty(MX: Tensor, MY: Tensor,
         convergence_threshold_atol,
         sinkhorn_iter,
         return_differences,
-        sinkhorn_iter_scheduler
+        sinkhorn_iter_schedule
         )
     if muX is None: 
         muX = markov_measure(MX)
