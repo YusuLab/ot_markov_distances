@@ -1,19 +1,107 @@
+r"""
+This module contains the implementation of the discounted WL distance,
+with its forward and backward pass (implemented as a torch.autograd.Function)
+
+The depth-:math:`\infty` version can be computed with the function :func:`wl_reg_infty`.
+The depth-:math:`k` version can be computed with the function :func:`wl_reg_k`.
+"""
+
+from typing import Literal
 import warnings
 
 from ml_lib.misc import all_equal, debug_time
 from ml_lib.pipeline.annealing_scheduler import get_scheduler
 import torch
-from torch import Tensor
+from torch import Tensor, FloatTensor
 from torch.nn import functional as F
 
 from .sinkhorn import sinkhorn_internal, sinkhorn
-from .utils import markov_measure, double_last_dimension
+from .utils import markov_measure,\
+        densify, cost_matrix_index as make_cost_matrix_index,\
+        reindex_cost_matrix, re_project_C, degree_markov, dummy_densify
+
+__all__ = [
+        "discounted_wl_k", 
+        "discounted_wl_infty", 
+        "discounted_wl_infty_cost_matrix"
+]
+
+def discounted_wl_cost_matrix_step(MX: FloatTensor, 
+                                   MY:FloatTensor, cost_matrix, 
+                                   distance_matrix, 
+                                   sinkhorn_reg, 
+                                   delta, one_minus_delta,
+                                   sinkhorn_max_iter, 
+                                   cost_matrix_index: Tensor|None=None,
+                                   cost_matrix_mask: Tensor|None=None,
+                                   save_to_ctx=None
+                                   ) -> Tensor:
+    """One step for the discounted WL cost matrix
+
+    will save the 
+
+    Args:
+        MX : [TODO:description]
+        MY : [TODO:description]
+        cost_matrix : [TODO:description]
+        sinkhorn_reg : [TODO:description]
+        delta : [TODO:description]
+        one_minus_delta : [TODO:description]
+        sinkhorn_max_iter : [TODO:description]
+        cost_matrix_index: [TODO:description]
+        save_to_ctx : eventually a context the f, g and log_P will be saved to
+
+    Returns:
+        [TODO:description]
+    """
+    b, n, one, dx = MX.shape
+    b_, one_, m, dy = MY.shape
+    b__, n_, m_ = cost_matrix.shape
+    assert all_equal(b, b_, b__) and n == n_ and m == m_ \
+            and all_equal(one, one_, 1)
+
+    x_sparse = n != dx
+    y_sparse = m != dy
+
+    if cost_matrix_index is not None:
+        cost_matrix_sparse = reindex_cost_matrix(cost_matrix, 
+                                                 cost_matrix_index, 
+                                                 cost_matrix_mask) 
+        # b, n, m, dx, dy
+    else:
+        assert not x_sparse and not y_sparse
+        cost_matrix_sparse = cost_matrix
+    
+    
+    f, g, log_P = sinkhorn_internal(
+            MX, # b, n, 1, dx
+            MY, # b, 1, m, dy
+            cost_matrix_sparse, # b, n, m, dx, dy
+            epsilon=sinkhorn_reg, 
+            k= sinkhorn_max_iter
+    )
+
+    sinkhorn_result = ((f*MX).sum(-1)
+                    + (g*MY).sum(-1))
+
+    new_cost_matrix = delta * distance_matrix \
+        + one_minus_delta * sinkhorn_result # b, n, m
+
+    if save_to_ctx is not None:
+        if not x_sparse:
+            save_to_ctx.f = f
+        if not y_sparse:
+            save_to_ctx.g = g
+        save_to_ctx.log_P = log_P
+        
+    return new_cost_matrix
+
 
 class DiscountedWlCostMatrix(torch.autograd.Function):
     
     @staticmethod
-    def forward(ctx, MX: Tensor, MY: Tensor, 
-        distance_matrix: Tensor,
+    def forward(ctx, MX: FloatTensor, MY: FloatTensor, 
+        distance_matrix: FloatTensor,
         delta: float = .4,
         sinkhorn_reg: float=.01,
         max_iter: int = 50,
@@ -21,7 +109,9 @@ class DiscountedWlCostMatrix(torch.autograd.Function):
         convergence_threshold_atol = 1e-6,
         sinkhorn_iter: int= 100,
         return_differences: bool=False,
-        sinkhorn_iter_scheduler="constant"
+        sinkhorn_iter_scheduler="constant",
+        x_is_sparse:bool|None=None,
+        y_is_sparse:bool|None=None,
         ):
         """computes the regularized WL distance
 
@@ -44,109 +134,178 @@ class DiscountedWlCostMatrix(torch.autograd.Function):
             reg: regularization parameter for sinkhorn
             delta: regularization parameter for WL
             sinkhorn_iter: number of sinkhorn iterations for a step
+            x_is_sparse: whether to use the accelerated algorithm, 
+                    considering MX is sparse 
+                    (default: compute the degree, 
+                    and check whether it lower that 2/3 n.
+                    If so, consider MX sparse)
+            y_is_sparse: whether to use the accelerated algorithm, 
+                    considering MY is sparse 
+                    (default: compute the degree, 
+                    and check whether it lower that 2/3 m.
+                    if so, consider MY sparse)
+
         """
-        b, n, n_ = MX.shape
-        b_, m, m_ = MY.shape
-        b__, n__, m__  = distance_matrix.shape
-        assert all_equal(n, n_, n__) and all_equal(m, m_, m__) and all_equal(b, b_, b__)
-        assert max_iter >= 1, "Can’t really converge without iterating"
-        one_minus_delta = 1 - delta
-        scheduler = get_scheduler(sinkhorn_iter_scheduler, T_0=max_iter, beta_0=sinkhorn_iter)
-        
-        differences = []
-        debug_time()
         with torch.no_grad():
-            cost_matrix = delta * distance_matrix
+            # initialization
+            b, n, n_ = MX.shape
+            b_, m, m_ = MY.shape
+            b__, n__, m__  = distance_matrix.shape
+            assert all_equal(n, n_, n__) \
+                    and all_equal(m, m_, m__) and all_equal(b, b_, b__)
+            assert max_iter >= 1, "Can’t really converge without iterating"
+
+            one_minus_delta = 1 - delta
+            scheduler = get_scheduler(sinkhorn_iter_scheduler, 
+                                      T_0=max_iter, beta_0=sinkhorn_iter)
+            
+            differences = []
+            debug_time()
+
+            cost_matrix = (delta * distance_matrix).contiguous()
+            if x_is_sparse is None: x_is_sparse = degree_markov(MX) < 2/3 * n
+            if y_is_sparse is None: y_is_sparse = degree_markov(MY) < 2/3 * m
+
+            if x_is_sparse: mx_index, mx_mask, mx_dense = densify(MX) 
+            else: mx_index, mx_mask, mx_dense = dummy_densify(MX)
+            if y_is_sparse: my_index, my_mask, my_dense = densify(MY)
+            else: my_index, my_mask, my_dense = dummy_densify(MY)
+            mx_dense = mx_dense[:, :, None, :] # b, n, 1, dx
+            my_dense = my_dense[:, None, :, :] # b, 1, m, dy
+
+            if x_is_sparse or y_is_sparse:
+                c_index, c_mask = make_cost_matrix_index(
+                        cost_matrix, mx_index, my_index, mx_mask, my_mask)
+            else:
+                c_index, c_mask = None, None
 
             for _ in range(max_iter):
                 # sinkhorn pass
-                f, g, log_P = sinkhorn_internal(
-                        MX[:, :, None, :], # b, n, 1, n
-                        MY[:, None, :, :], # b, 1, m, m
-                        cost_matrix[:, None, None, :, :], # b, 1, 1, n, m
-                        epsilon=sinkhorn_reg, 
-                        k= int(scheduler.step()) + 1
-                )
-                sinkhorn_result = (f * MX[:, :, None, :]).sum(-1) + (g*MY[:, None, :, :]).sum(-1)
-    
-                # update
-                new_cost_matrix = delta * distance_matrix \
-                    + one_minus_delta * sinkhorn_result # b, n, m
-                
+                new_cost_matrix = discounted_wl_cost_matrix_step(
+                        mx_dense, my_dense, cost_matrix, 
+                        distance_matrix,
+                        sinkhorn_reg, delta, one_minus_delta,
+                        sinkhorn_max_iter=int(scheduler.step()) + 1, 
+                        cost_matrix_index = c_index, 
+                        cost_matrix_mask = c_mask, 
+                        save_to_ctx=ctx
+                        )
                 # stop condition 
                 if torch.allclose(cost_matrix, new_cost_matrix, 
                             rtol=convergence_threshold_rtol,
                             atol=convergence_threshold_atol):
                     break
                 differences.append(F.mse_loss(cost_matrix, new_cost_matrix))
-                cost_matrix = new_cost_matrix 
+                cost_matrix[...] = new_cost_matrix #type: ignore
                 debug_time("iteration")
             else:
                 warnings.warn("regularized WL did not converge")
 
-        ctx.save_for_backward(f, g, log_P) #type:ignore
-        ctx.delta = delta
-        ctx.one_minus_delta = one_minus_delta
-        if return_differences:
-            return cost_matrix, differences
+        # ctx.save_for_backward(f, g, log_P) #type:ignore
+        ctx.x_is_sparse = x_is_sparse; ctx.y_is_sparse = y_is_sparse
+        ctx.delta = delta; ctx.one_minus_delta = one_minus_delta
+        ctx.c_index = c_index; ctx.c_mask = c_mask
+        if return_differences: return cost_matrix, differences
         return cost_matrix
         
     @staticmethod
     def backward(ctx, grad_output):
-        """
-        See the paper for details on how the backward pass is computed.
+        r"""We use a simplified version of the formulae in the paper
         
+        see :doc:`notes_gradient` for more details (in the doc).
         Args:
-            grad_output: (b,)
+            grad_output: (b, n, m)
         """
-        f, g, log_P = ctx.saved_tensors
-        b, n, m, _, _ = log_P.shape
-        delta = ctx.delta
-        one_minus_delta = ctx.one_minus_delta
-        device = log_P.device
         with torch.no_grad():
-            P = log_P.exp() #b, n, m, n, m
-            # f  (b, n, m, n)
-            # F = torch.einsum("bijl->bijil", f) #doesnt work but that’s the idea
-            F = torch.permute(f, (0, 2, 3, 1)) #bijl -> bjli
-            F = double_last_dimension(F) #bjlii
-            F = torch.permute(F, (0, 3, 1, 4, 2)) #bijil
-            # (n, m, n, n)
-            # g (b, n, m, m)
-            # G = torch.einsum("bijl->bijjl", g) #(n, m, m, m)
-            G = torch.permute(g, (0, 1, 3, 2)) #bijl -> bilj
-            G = double_last_dimension(G) #biljj
-            G = torch.permute(G, (0, 1, 3, 4, 2)) #bijjl 
-        
-            mymatrix = torch.eye(n*m, device=device)[None, ...] - one_minus_delta * P.reshape(b, n*m, n*m) 
-            # b, n*m, n*m
-            
-            #print(torch.det(mymatrix))
-            #print(mymatrix)
-            #see paper for a proof this is diagonally dominant, thus invertible
-            Delta = delta * torch.inverse(mymatrix)
-            Gamma = one_minus_delta * torch.linalg.solve(mymatrix, F.reshape(b, n*m, n*n))
-            Theta = one_minus_delta * torch.linalg.solve(mymatrix, G.reshape(b, n*m, m*m))
-            
-            Delta = Delta.reshape(b, n, m, n, m)
-            Gamma = Gamma.reshape(b, n, m, n, n) 
-            Theta = Theta.reshape(b, n, m, m, m)
+            # recover saved stuff
+            log_P = ctx.log_P
+            c_index, c_mask = ctx.c_index, ctx.c_mask
+            b, n, m, _, _ = log_P.shape
+            delta = ctx.delta
+            one_minus_delta = ctx.one_minus_delta
+            device = log_P.device
+            log_P = log_P
 
-            d_cost_matrix = torch.einsum("bijkl,bij->bkl", Delta, grad_output)
-            d_mx = torch.einsum("bijkl,bij->bkl", Gamma, grad_output)
-            d_my = torch.einsum("bijkl,bij->bkl", Theta, grad_output)
+            # what do we need to do?
+            mx_needs_grad, my_needs_grad, c_needs_grad, *_ = \
+                ctx.needs_input_grad
+
+            # compute 
+            P = log_P.exp() #b, n, m, n, m
+            P = re_project_C(P, c_index, c_mask)
+        
+            K = torch.eye(n*m, device=device)[None, ...] \
+                    - one_minus_delta * P.reshape(b, n*m, n*m) 
+            # K = I - (1- delta) P
+            # b, n*m, n*m
+            #see paper for a proof this is diagonally dominant, thus invertible
+            K_Tm1_grad = torch.linalg.solve(K.transpose(-1, -2), 
+                                            grad_output.reshape(b, n*m))
+            K_Tm1_grad = K_Tm1_grad.reshape(b, n, m)
+            # (K^{T, -1} @ grad)
+            # remark that now
+            # d_c = delta * K_Tm1_grad
+            # d_mx = (1 - delta) * F.T @ K_T_
+            
+
+            if mx_needs_grad:
+                assert not ctx.x_is_sparse, "can’t differentiate on sparse kernel"
+                f = ctx.f
+                # f  (b, n, m, n)
+                # F = torch.einsum("bijl->bijil", f)
+                #doesnt work but that’s the idea
+                # F = torch.permute(f, (0, 2, 3, 1)) #bijl -> bjli
+                # F = double_last_dimension(F) #bjlii
+                # F = torch.permute(F, (0, 3, 1, 4, 2)) #bijil
+                # Gamma = one_minus_delta * \
+                #         torch.linalg.solve(mymatrix, F.reshape(b, n*m, n*n))
+                # Gamma = Gamma.reshape(b, n, m, n, n) 
+                # d_mx = torch.einsum("bijkl,bij->bkl", Gamma, grad_output)
+                d_mx = one_minus_delta\
+                        * torch.einsum("bkjl,bkj->bkl", f, K_Tm1_grad)
+                d_mx = d_mx - d_mx.mean(-1, keepdims=True)
+                # normalize the markov gradients to stay in the markov space
+            else:
+                d_mx = None
+            if my_needs_grad:
+                assert not ctx.y_is_sparse, "can’t differentiate on sparse kernel"
+                g = ctx.g
+                # g (b, n, m, m)
+                # G = torch.einsum("bijl->bijjl", g) #(n, m, m, m)
+                # G = torch.permute(g, (0, 1, 3, 2)) #bijl -> bilj
+                # G = double_last_dimension(G) #biljj
+                # G = torch.permute(G, (0, 1, 3, 4, 2)) #bijjl 
+                # Theta = one_minus_delta * \
+                #         torch.linalg.solve(mymatrix, G.reshape(b, n*m, m*m))
+                # Theta = Theta.reshape(b, n, m, m, m)
+                # d_my = torch.einsum("bijkl,bij->bkl", Theta, grad_output)
+                d_my = one_minus_delta\
+                        * torch.einsum("bikl,bik->bkl", g, K_Tm1_grad)
+                d_my = d_my - d_my.mean(-1, keepdims=True)        
+                # normalize the markov gradients to stay in the markov space
+            else:
+                d_my = None
+            
+            if c_needs_grad:
+                # Delta = delta * torch.inverse(mymatrix)
+                # Delta = Delta.reshape(b, n, m, n, m)
+                # d_cost_matrix = \
+                #     torch.einsum("bijkl,bij->bkl", Delta, grad_output)
+                d_cost_matrix = delta * K_Tm1_grad
+            else:
+                d_cost_matrix = None
+
                         
-            d_mx = d_mx - d_mx.mean(-1, keepdims=True)# normalize the markov gradients to stay in the markov space
-            d_my = d_my - d_my.mean(-1, keepdims=True)        
         return (d_mx, d_my, d_cost_matrix, *[None]*8 )
 
-def wl_reg_cost_matrix(MX: Tensor, MY: Tensor, 
+def discounted_wl_infty_cost_matrix(
+        MX: Tensor, MY: Tensor, 
         distance_matrix: Tensor,
         delta: float = .4,
         sinkhorn_reg: float=.01,
         max_iter: int = 50,
-        convergence_threshold_rtol = .005,
-        convergence_threshold_atol = 1e-6,
+        convergence_threshold_rtol: float = .005,
+        convergence_threshold_atol: float = 1e-6,
         sinkhorn_iter: int= 100,
         return_differences: bool=False,
         sinkhorn_iter_scheduler="constant"
@@ -163,7 +322,7 @@ def wl_reg_cost_matrix(MX: Tensor, MY: Tensor,
         sinkhorn_iter_scheduler)
 
 
-def wl_reg_infty(MX: Tensor, MY: Tensor, 
+def discounted_wl_infty(MX: Tensor, MY: Tensor, 
         distance_matrix: Tensor,
         muX: Tensor | None = None,
         muY: Tensor | None = None, 
@@ -176,7 +335,8 @@ def wl_reg_infty(MX: Tensor, MY: Tensor,
         return_differences: bool=False,
         sinkhorn_iter_scheduler="constant"
         ):
-    cost_matrix =  wl_reg_cost_matrix(MX, MY, 
+    cost_matrix =  discounted_wl_infty_cost_matrix(
+        MX, MY, 
         distance_matrix,
         delta,
         sinkhorn_reg,
@@ -185,7 +345,8 @@ def wl_reg_infty(MX: Tensor, MY: Tensor,
         convergence_threshold_atol,
         sinkhorn_iter,
         return_differences,
-        sinkhorn_iter_scheduler)
+        sinkhorn_iter_scheduler
+        )
     if muX is None: 
         muX = markov_measure(MX)
     if muY is None:
@@ -193,7 +354,7 @@ def wl_reg_infty(MX: Tensor, MY: Tensor,
 
     return sinkhorn(muX, muY, cost_matrix, sinkhorn_reg)
 
-def wl_delta_k(MX: Tensor, MY: Tensor, 
+def discounted_wl_k(MX: Tensor, MY: Tensor, 
         l1: Tensor, l2: Tensor,
         k: int,
         muX: Tensor | None = None,
@@ -203,10 +364,13 @@ def wl_delta_k(MX: Tensor, MY: Tensor,
         sinkhorn_iter: int= 100,
         return_differences:bool= False,
         ):
-    """computes the discounted WL distance
+    r"""computes the discounted WL distance
 
     computes the WL-delta distance between two markov transition matrices 
     (represented as torch tensor)
+
+    This function does not have the backward pass mentioned in the paper,
+    because that formula is only valid for the case :math:`k=\infty`
 
     Batched over first dimension (b)
 

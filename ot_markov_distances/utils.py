@@ -1,6 +1,8 @@
-import networkx as nx
 import torch
-from torch import Tensor
+from torch import Tensor, LongTensor, FloatTensor, BoolTensor
+import networkx as nx
+
+from ml_lib.misc import all_equal
 
 def weighted_transition_matrix(G:nx.Graph, q: float):
     """Create a LMMC from a Graph
@@ -95,3 +97,172 @@ def draw_markov(M: Tensor,pos=None, node_color=None, ax=None):
                 alpha=np.array(list(nx.get_edge_attributes(G, "weight").values())),
                     )
     nx.draw_networkx_nodes(G, pos, ax=ax, **nc)
+
+def degree_markov(m: torch.Tensor) -> int:
+    return m.count_nonzero(dim=-1).max().item() #type:ignore
+
+
+def densify(m: torch.FloatTensor)-> tuple[Tensor, Tensor, Tensor]:
+    r"""make a sparse markov matrix into a dense one
+
+    Takes a (batched) markov matrix `m` where every transition is very sparse.
+
+    Call :math:`d := \max_i(\deg(m_i)) = \max_i #\{j, m_{ij} \neq 0 \} `
+    (maxmized over the batch)
+
+    Assume d is low (so every one of the :math:`m_i` is sparse)
+
+    call, for :math:`0 \leq i < [n]`, 
+    :math:`\text{index}_{i, 0} \ldots \text{index}_{i, d-1}`
+    the indices where :math:`m_i` is nonzero, in increasing order
+    (eventually 0-padded if there are less than d)
+
+    this gives us an `index` array of size `(*batch, n, d)`
+
+    call also `index_mask` the mask of size `(*batch, n, d)` corresponding to 
+    the 0-padding we did on `index` (so `index_mask[*b, i, j] = True` 
+    if `index[*b, i, j]` is an actual index, False if it’s just padding)
+
+    Finally, call `m_dense` so that
+
+    .. math::
+
+        m_dense[*b, i, j] = \begin{cases}
+            m[*b, i, index[*b, i, j]]  \text{ if } index_mask[*b, i, j] \\
+            0 \text{ otherwise }
+        \end{cases}
+
+    Args:
+        m: `(*batch, n, n)` input markov matrix
+
+    Returns:
+        m_indices: `(*batch, n, d)`, LongTensor
+        m_indices_mask: `(*batch, n, d)`, BoolTensor
+        m_dense: `(*batch, ), Floattensor
+
+    """
+
+    *batch, n, n_ = m.shape
+    assert all_equal(n, n_)
+
+    # flatten stuff (working with less dimensions is easier)
+    m_flat = m.view(-1, n)
+    n_flat, _ = m_flat.shape #n_flat = n * batch
+
+    
+    # max degree
+    m_flat_degree = (m_flat>0).sum(-1)
+    m_max_degree:int = m_flat_degree.max().item() #type:ignore
+
+
+    # indices and padding masks
+    nonzero_indices = torch.zeros((*batch, n, m_max_degree), 
+                                  dtype=torch.long, device=m.device)
+    nonzero_indices_mask = torch.zeros((*batch, n, m_max_degree), 
+                                       dtype=torch.bool, device=m.device)
+    nzi_flat = nonzero_indices.view(-1, m_max_degree)
+    nzi_flat_mask = nonzero_indices_mask.view(-1, m_max_degree)
+
+    for i in range(n_flat):
+        line, = m_flat[i].nonzero(as_tuple=True)
+        line_len = len(line)
+        nzi_flat[i, :line_len] = line
+        nzi_flat_mask[i, :line_len] = 1
+
+    
+    #densified
+    # we want mx_dense[*b, i, k] = mx[*b, i, nonzero_indices[*b, i, k]] if nonzero_indices_mask[*b, i, k] else 0
+    m_dense = torch.empty((*batch, n, m_max_degree), 
+                          dtype=m.dtype, device=m.device)
+    m_dense_flat = m_dense.view((-1, m_max_degree))
+    m_dense_flat[...] = torch.where(nzi_flat_mask, m_flat.gather(1, nzi_flat), 0)#type:ignore
+
+    return nonzero_indices, nonzero_indices_mask, m_dense
+
+def dummy_densify(m: torch.FloatTensor)\
+        -> tuple[LongTensor, BoolTensor, FloatTensor]:
+    """Same as densify, but returns dummy results:
+        the densified matrix is the full matrix, 
+        the index is simply (1, 2, ..., n)
+        and the mask is all true
+    """
+    _, n, n_ = m.shape
+    assert n == n_
+    m_index: LongTensor = torch.arange(n, dtype=torch.long, device=m.device)\
+            [None, None, :]\
+            .expand_as(m)#type:ignore 
+    m_mask: BoolTensor = torch.ones_like(m, dtype=torch.bool, device=m.device)#type:ignore
+    return m_index, m_mask, m
+
+def cost_matrix_index(C: Tensor, mx_index: Tensor, my_index: Tensor, 
+                      mx_mask: Tensor, my_mask: Tensor):
+    r"""reindex the cost matrix to go with densified distributions
+
+    takes the indices mx_index and my_index output by densify, as well as a cost matrix,
+    and reindexes the cost matrix to go with the densified distributions.
+
+    More precisely, if
+
+    ```
+    mx_index, mx_mask, mx_dense =  densify(mx)
+    my_index, my_mask, my_dense =  densify(my)
+    C_index, C_mask = cost_matrix_index(mx_index, my_index, mx_mask, my_mask)
+    C_dense = C.view(-1)[C_index]
+    ```
+
+    then 
+
+    ```
+    sinkhorn(mx_dense[:, :, None, :], my_dense[:, None, :, :], C_dense, epsilon) ==  sinkhorn(mx[:, :, None, :], my[:, None, :, :], C[:, None, None, :, :])
+    ```
+
+    Args:
+        mx_index: `(*batch, n, dx)`, LongTensor
+        my_index: `(*batch, m, dy)`, LongTensor
+        
+
+    Returns:
+        C_index: 
+        C_mask
+
+    """
+    b, _, _ = C.shape
+    assert C.is_contiguous()
+    C_index = C.stride(1) * mx_index[:, :, None, :, None] +  my_index[:, None, :, None, :] \
+            + torch.arange(0, b * C.stride(0), step=C.stride(0), dtype=torch.long, device=C.device)[:, None, None, None, None]
+    C_mask = (mx_mask[:, :, None, :, None] & my_mask[:, None, :, None, :])
+
+    return C_index, C_mask
+
+def reindex_cost_matrix(C, C_index, C_mask):
+    assert C.is_contiguous()
+    C_dense = C.view(-1)[C_index]
+    C_dense[C_mask == False] = 1.
+    return C_dense
+
+
+def re_project_C(C_dense: FloatTensor, C_index: LongTensor, 
+                 C_mask: BoolTensor|None=None):
+    """Inverse of reindex_cost_matrix
+
+    Takes a (b, n, m, dx, dy) reindexed cost matrix (or matching matrix)
+    and outputs a (b, n, m, n, m) cost matrix C_sparse
+    where C_sparse[b, i, j, mx_index[b, i, j, k], my_index[b, i, j, l]] 
+        = C_dense[b, i, j, k, l]
+    And the rest are filled with zeros
+
+    Args:
+        C_dense: (b, n, m, dx, dy)
+        C_index: (b, n, m, dx, dy)
+        C_mask: (b, n, m, dx, dy)
+    """
+    b, n, m, dx, dy = C_dense.shape
+    if C_mask is not None:
+        C_dense = C_dense.clone() #type: ignore
+        C_dense[C_mask==0]=0
+    C_dense = torch.einsum("bijxy->ijbxy", C_dense) #type: ignore
+    C_index = torch.einsum("bijxy->ijbxy", C_index) #type: ignore
+    C = torch.zeros((n, m, b, n, m), dtype=C_dense.dtype, 
+                    device=C_dense.device).view(n, m, -1) 
+    C.scatter_add_(-1, C_index.reshape(n, m, -1), C_dense.reshape(n, m, -1))
+    return torch.einsum("ijbxy->bijxy", C.view(n, m, b, n, m))

@@ -72,6 +72,8 @@ class Sinkhorn(torch.autograd.Function):
         epsilon: float, k: int=100) -> Tensor:
         r"""Batched version of sinkhorn distance
 
+        It is computed as in [@feydyInterpolatingOptimalTransport2019, Property 1]
+
         The 3 batch dims will be broadcast to each other. 
         Every steps is only broadcasted torch operations,
         so it should be reasonably fast on gpu
