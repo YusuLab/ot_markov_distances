@@ -82,7 +82,10 @@ def test_densified_sinkhorn(generate_data):
                 C[bi, mx_index[bi, ni, i1], my_index[bi, mi, i2]]) or
                 (not C_mask[bi, ni, mi, i1, i2]))
 
-    assert torch.allclose(sinkhorn_distance(mx_dense[:, :, None, :], my_dense[:, None, :, :], C_dense, epsilon=.1 ) , 
-                          sinkhorn_distance(mx[:, :, None, :], my[:, None, :, :], C[:, None, None, :, :], epsilon=.1), atol=1e-4, rtol=1e-2)
+    assert torch.allclose(sinkhorn_distance(mx_dense[:, :, None, :], my_dense[:, None, :, :], 
+                                            C_dense, epsilon=.1, max_iter=1000), 
+                          sinkhorn_distance(mx[:, :, None, :], my[:, None, :, :], 
+                                            C[:, None, None, :, :], epsilon=.1, max_iter=1000), 
+                          atol=1e-4, rtol=1e-2)
 
 
