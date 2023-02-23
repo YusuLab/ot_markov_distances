@@ -70,7 +70,7 @@ def discounted_wl_cost_matrix_step(MX: FloatTensor,
         # b, n, m, dx, dy
     else:
         assert not x_sparse and not y_sparse
-        cost_matrix_sparse = cost_matrix
+        cost_matrix_sparse = cost_matrix[:, None, None, :, :]
     
     
     f, g, log_P, sinkhorn_converged = sinkhorn_internal(
