@@ -4,12 +4,10 @@ import math
 
 import networkx as nx
 import torch
-from torch import Tensor
 
 from ot_markov_distances import sinkhorn_distance
 from ot_markov_distances.utils import weighted_transition_matrix
 
-from ot.bregman import sinkhorn_log as ot_sinkhorn_log
 from ot import emd
 
 @pytest.mark.parametrize("n, m, p", [(4, 3, .5), (5, 4, .5), (6, 5, .5)])
