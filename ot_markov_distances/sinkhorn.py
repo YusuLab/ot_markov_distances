@@ -5,6 +5,7 @@ divergence,
 using the method described in :cite:`feydyInterpolatingOptimalTransport2019`
 """
 from typing import Optional,  overload, Literal
+from math import ceil
 
 import torch
 from torch import Tensor
@@ -69,7 +70,7 @@ def sinkhorn_internal(a: Tensor, b: Tensor, C: Tensor,
     steps_at_which_to_check_for_convergence:list[bool]
     match check_convergence_interval:
         case float():
-            check_convergence_interval = int(check_convergence_interval * k)
+            check_convergence_interval = ceil(check_convergence_interval * k)
             steps_at_which_to_check_for_convergence = \
                     [(step - 1) % check_convergence_interval == 0 for step in range(k)]
         case 0:
