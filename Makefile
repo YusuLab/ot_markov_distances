@@ -59,9 +59,11 @@ docs/source/README.md: .make/docs-dir ./README.md
 #Others
 #---------------------------------------------------------------
 
+jupyter-kernel: .make/jupyter-kernel
 
-# install-kernel: deps
-# 	pipenv run python -m ipykernel install --user --name=ECE143-project-env
+.make/jupyter-kernel: .make/dev-deps | .make
+	$(RUN_IN_ENV) python -m ipykernel install --user --name=ot_markov_distances-env
+	touch $@
 
 clean:
 	rm -rf docs
