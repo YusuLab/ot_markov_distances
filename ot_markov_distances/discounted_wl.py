@@ -114,9 +114,12 @@ class DiscountedWlCostMatrix(torch.autograd.Function):
         x_is_sparse:bool|None=None,
         y_is_sparse:bool|None=None,
         ):
-        """computes the regularized WL distance
+        """This is an internal function, you should not have to call it directly
 
-        computes the regularized WL distance between two markov transition matrices 
+        See :func:`discounted_wl_infty_cost_matrix` or :func:`discounted_wl_infty` 
+        for the public API
+
+        computes the regularized WL distance cost matrix between two markov transition matrices 
         (represented as torch tensor)
 
         Batched over first dimension (b)
@@ -127,9 +130,6 @@ class DiscountedWlCostMatrix(torch.autograd.Function):
         Args:
             MX: (b, n, n) first transition tensor
             MY: (b, m, m) second transition tensor
-            l1: (b, n,) label values for the first space
-            l2: (b, m,) label values for the second space
-            k: number of steps (k parameter for the WL distance)
             muX: stationary distribution for MX (if omitted, will be recomuputed)
             muY: stationary distribution for MY (if omitted, will be recomuputed)
             reg: regularization parameter for sinkhorn
@@ -316,34 +316,11 @@ def discounted_wl_infty_cost_matrix(
         convergence_threshold_atol: float = 1e-6,
         sinkhorn_iter: int= 100,
         return_differences: bool=False,
-        sinkhorn_iter_schedule=10
+        sinkhorn_iter_schedule: int=10, 
+        x_is_sparse:bool|None=None,
+        y_is_sparse:bool|None=None,
         ):
-    return DiscountedWlCostMatrix.apply(MX, MY, 
-        distance_matrix,
-        delta,
-        sinkhorn_reg,
-        max_iter,
-        convergence_threshold_rtol,
-        convergence_threshold_atol,
-        sinkhorn_iter,
-        return_differences,
-        sinkhorn_iter_schedule)
-
-
-def discounted_wl_infty(MX: Tensor, MY: Tensor, 
-        distance_matrix: Tensor,
-        muX: Tensor | None = None,
-        muY: Tensor | None = None, 
-        delta: float = .4,
-        sinkhorn_reg: float=.01,
-        max_iter: int = 50,
-        convergence_threshold_rtol = .005,
-        convergence_threshold_atol = 1e-6,
-        sinkhorn_iter: int= 100,
-        return_differences: bool=False,
-        sinkhorn_iter_schedule=10
-        ):
-    cost_matrix =  discounted_wl_infty_cost_matrix(
+    return DiscountedWlCostMatrix.apply(
         MX, MY, 
         distance_matrix,
         delta,
@@ -353,7 +330,71 @@ def discounted_wl_infty(MX: Tensor, MY: Tensor,
         convergence_threshold_atol,
         sinkhorn_iter,
         return_differences,
-        sinkhorn_iter_schedule
+        sinkhorn_iter_schedule, 
+        x_is_sparse, 
+        y_is_sparse,
+        )
+
+
+def discounted_wl_infty(
+        MX: Tensor, MY: Tensor, 
+        distance_matrix: Tensor,
+        muX: Tensor | None = None,
+        muY: Tensor | None = None, 
+        delta: float = .4,
+        sinkhorn_reg: float=.01,
+        max_iter: int = 50,
+        convergence_threshold_rtol:float = .005,
+        convergence_threshold_atol:float = 1e-6,
+        sinkhorn_iter: int= 100,
+        sinkhorn_iter_schedule: int =10,
+        x_is_sparse:bool|None=None,
+        y_is_sparse:bool|None=None,
+        ):
+    """Discounted WL infinity distance
+
+    Computes the discounted WL infinity distance
+    between ``(MX, muX)`` and ``(MY, muY)``
+    with cost matrix ``distance_matrix`` and discount factor ``delta``.
+
+    Args:
+        MX: (b, n, n) first transition tensor
+        MY: (b, m, m) second transition tensor
+        distance_matrix: [TODO:description]
+        muX: initial distribution for MX (if omitted, the stationary distribution will be used instead)
+        muY: initial distribution for MY (if omitted, the stationary distribution will be used instead)        
+        delta: discount factor
+        sinkhorn_reg: regularization parameter for the sinkhorn algorithm
+        max_iter: maximum number of iterations.
+        convergence_threshold_rtol : relative tolerance for convergence criterion (see ``torch.allclose``)
+        convergence_threshold_atol : absolute tolerance for convergence criterion (see ``torch.allclose``)
+        sinkhorn_iter: maximum number of sinkhorn iteration
+        sinkhorn_iter_schedule ([TODO:type]): [TODO:description]
+        x_is_sparse: whether to use the accelerated algorithm, 
+                considering MX is sparse 
+                (default: compute the degree, 
+                and check whether it lower that 2/3 n.
+                If so, consider MX sparse)
+        y_is_sparse: whether to use the accelerated algorithm, 
+                considering MY is sparse 
+                (default: compute the degree, 
+                and check whether it lower that 2/3 m.
+                if so, consider MY sparse)
+    """
+    cost_matrix =  discounted_wl_infty_cost_matrix(
+        MX=MX, 
+        MY=MY, 
+        distance_matrix=distance_matrix,
+        delta=delta,
+        sinkhorn_reg=sinkhorn_reg,
+        max_iter=max_iter,
+        convergence_threshold_rtol=convergence_threshold_rtol,
+        convergence_threshold_atol=convergence_threshold_atol,
+        sinkhorn_iter=sinkhorn_iter,
+        return_differences=False, 
+        sinkhorn_iter_schedule=sinkhorn_iter_schedule, 
+        x_is_sparse=x_is_sparse, 
+        y_is_sparse=y_is_sparse,
         )
     if muX is None: 
         muX = markov_measure(MX)
