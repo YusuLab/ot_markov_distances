@@ -238,7 +238,7 @@ class DiscountedWlCostMatrix(torch.autograd.Function):
             mx_needs_grad, my_needs_grad, c_needs_grad, *rest_needs_grad = \
                 ctx.needs_input_grad
 
-            assert all(ng is None for ng in rest_needs_grad), "required grad on an unsupported variable"
+            assert not any(rest_needs_grad), "required grad on an unsupported variable"
             number_of_nograd_parameters = len(rest_needs_grad)
 
             # compute 
