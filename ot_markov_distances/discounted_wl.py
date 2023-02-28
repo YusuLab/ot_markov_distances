@@ -235,8 +235,11 @@ class DiscountedWlCostMatrix(torch.autograd.Function):
             log_P = log_P
 
             # what do we need to do?
-            mx_needs_grad, my_needs_grad, c_needs_grad, *_ = \
+            mx_needs_grad, my_needs_grad, c_needs_grad, *rest_needs_grad = \
                 ctx.needs_input_grad
+
+            assert all(ng is None for ng in rest_needs_grad), "required grad on an unsupported variable"
+            number_of_nograd_parameters = len(rest_needs_grad)
 
             # compute 
             P = log_P.exp() #b, n, m, n, m
@@ -304,7 +307,7 @@ class DiscountedWlCostMatrix(torch.autograd.Function):
                 d_cost_matrix = None
 
                         
-        return (d_mx, d_my, d_cost_matrix, *[None]*8 )
+        return (d_mx, d_my, d_cost_matrix, *[None]*number_of_nograd_parameters )
 
 def discounted_wl_infty_cost_matrix(
         MX: Tensor, MY: Tensor, 
