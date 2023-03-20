@@ -53,7 +53,9 @@ $ poetry install
 ## Documentation
 
 ```{warning}
-Do not edit the documentation directly in the `docs/` folder, that folder is wiped every time the documentation is built. The static parts of the documentation can be edited in `staticdocs/`.
+Do not edit the documentation directly in the `docs/` folder, 
+that folder is wiped every time the documentation is built. 
+The static parts of the documentation can be edited in `staticdocs/`.
 ```
 
 You can build documentation and run tests using
