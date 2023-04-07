@@ -10,7 +10,6 @@ def wl_k(MX: Tensor, MY: Tensor,
         muX: Tensor | None = None,
         muY: Tensor | None = None, 
         reg: float=.1, 
-        sinkhorn_iter: int= 100,
         ):
     """computes the WL distance
 
@@ -28,7 +27,6 @@ def wl_k(MX: Tensor, MY: Tensor,
         muX: stationary distribution for MX (if omitted, will be recomuputed)
         muY: stationary distribution for MY (if omitted, will be recomuputed)
         reg: regularization parameter for sinkhorn
-        sinkhorn_iter: number of sinkhorn iterations for a step
     """
     b, n, n_ = MX.shape
     b_, m, m_ = MY.shape
@@ -41,7 +39,6 @@ def wl_k(MX: Tensor, MY: Tensor,
                 MY[:, None, :, :], # b, 1, m, m
                 cost_matrix[:, None, None, :, :], # b, 1, 1, n, m
                 epsilon=reg, 
-                k= sinkhorn_iter
         ) # b, n, m
 
     if muX is None: 
