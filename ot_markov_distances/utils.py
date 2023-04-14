@@ -266,3 +266,46 @@ def re_project_C(C_dense: FloatTensor, C_index: LongTensor,
                     device=C_dense.device).view(n, m, -1) 
     C.scatter_add_(-1, C_index.reshape(n, m, -1), C_dense.reshape(n, m, -1))
     return torch.einsum("ijbxy->bijxy", C.view(n, m, b, n, m))
+
+def pad_one_markov_to(M: Tensor, mu: Tensor,  n: int):
+    """Pad a markov chain to n states
+
+    Pads a markov chain to n states by adding 
+    (n - m) states with zero distribution mass, and transitions to themselves wp 1.
+
+    Args:
+        M: (m, m) transition matrix
+        mu: (m) distribution
+        n: the number of states to pad to
+    """
+    m, m_ = M.shape
+    assert m == m_
+    assert m <= n
+
+    M_pad = torch.eye((n, n), dtype=M.dtype, device=M.device)
+    M_pad[:m, :m] = M
+    mu_pad = torch.zeros((n,), dtype=mu.dtype, device=mu.device)
+    mu_pad[:m] = mu
+    return M_pad, mu_pad
+
+
+def pad_markovs(transition_matrices: list[Tensor], distributions: list[Tensor]):
+    """Pad markov chains to the same number of states
+
+    Pads markov chains to the same number of states by adding 
+    states with zero distribution mass, and transitions to themselves wp 1.
+
+    Args:
+        transition_matrices: list of  transition matrices (of shape (m_i, m_i))
+        distributions: list of distributions (of shape (m_i))
+    """
+    sizes = []
+    for M, mu in zip(transition_matrices, distributions):
+        m, m_ = M.shape
+        m__, = mu.shape
+        assert all_equal(m, m_, m__)
+        sizes.append(m)
+    n = max(sizes)
+    transition_matrices_pad = [ pad_one_markov_to(M, mu, n) for M, mu in zip(transition_matrices, distributions)]
+    return torch.stack(transition_matrices_pad, dim=0)
+
