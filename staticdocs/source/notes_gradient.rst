@@ -44,9 +44,9 @@ Developing
 
 .. math::
    \begin{gather}
-   G^C = (1-\delta) (K^T)^{-1} G^O\\
-   G^X = \delta F^T (K^T)^{-1} G^O\\
-   G^Y = \delta G^T (K^T)^{-1} G^O\\
+   G^C = \delta (K^T)^{-1} G^O\\
+   G^X = (1-\delta) F^T (K^T)^{-1} G^O\\
+   G^Y = (1-\delta) G^T (K^T)^{-1} G^O\\
    \end{gather}
 
 Thus we save some compute by applying above formulae,
