@@ -1,5 +1,8 @@
 # ot_markov_distances
 
+![github workflow badge](https://github.com/<OWNER>/<REPOSITORY>/actions/workflows/<WORKFLOW_FILE>/badge.svg)
+
+
 Distances on graphs based on optimal transport 
 
 This is the implementation code for {cite}`brugère2023distances`
