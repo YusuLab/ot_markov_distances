@@ -16,7 +16,7 @@ all: .make/build-docs .make/run-tests
 
 run-tests: .make/run-tests
 
-.make/run-tests: .make/deps .make/test-deps |.make
+.make/run-tests coverage.xml: .make/deps .make/test-deps |.make
 	$(RUN_IN_ENV) pytest --cov=$(PACKAGE) --cov-report xml
 
 .make/deps: pyproject.toml | .make
