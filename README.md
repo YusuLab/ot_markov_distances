@@ -1,6 +1,7 @@
 # ot_markov_distances
 
-![github workflow badge](https://github.com/<OWNER>/<REPOSITORY>/actions/workflows/<WORKFLOW_FILE>/badge.svg)
+![github workflow badge](https://github.com/tbrugere/ot_markov_distances/actions/workflows/testing-and-docs.yml/badge.svg)
+[![codecov](https://codecov.io/gh/tbrugere/ot_markov_distances/branch/main/graph/badge.svg?token=MXZ41FHRC4)](https://codecov.io/gh/tbrugere/ot_markov_distances)
 
 
 Distances on graphs based on optimal transport 
