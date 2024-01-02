@@ -25,6 +25,30 @@ class ParametricMarkovMatrix(nn.Module):
     def forward(self) -> Tensor:
         return F.softmax(self.m / self.heat, dim=-1)
 
+    def get(self) -> Tensor:
+        return F.softmax(self.m / self.heat, dim=-1)
+
+
+@auto_repr("size", "time_factor")
+class WarpedTimeParametricMarkovMatrix(ParametricMarkovMatrix):
+
+    size:int
+    m: nn.Parameter
+    heat: float = 1.
+    time_factor: int= 1
+
+    def __init__(self, size:int, *, heat:float = 1., time_factor: int= 1):
+        super().__init__(size, heat=heat)
+        self.time_factor = time_factor
+
+    def forward(self) -> Tensor:
+        M = super().forward()
+        warped_M = torch.matrix_power(M, self.time_factor)
+        return warped_M
+
+    def get(self) -> Tensor:
+        return super().forward()
+
 @auto_repr("size1", "size2")
 class ParametricMatching(nn.Module):
     
@@ -83,7 +107,7 @@ class ParametricMarkovMatrixWithMatchings(nn.Module):
         return self.markov(), *[m() for m in self.matchings]
 
     def get(self) -> tuple[Tensor, ...]:
-        return self.markov(), *[m.get() for m in self.matchings]
+        return self.markov.get(), *[m.get() for m in self.matchings]
 
     def draw(self, original_positions, ax=None):
         if ax is None:
@@ -107,19 +131,22 @@ class ParametricMarkovMatrixWithLabels(nn.Module):
     others: Optional[list[Tensor]]
 
     @overload
-    def __init__(self, size:int, label_size:int, /, *, heat=1.):
+    def __init__(self, size:int, label_size:int, /, *, heat=1., time_factor=None):
         ...
 
     @overload
-    def __init__(self, size:int, *target_labels: Tensor, heat=1.):
+    def __init__(self, size:int, *target_labels: Tensor, heat=1., time_factor=None):
         ...
 
-    def __init__(self, size:int, *target_labels, heat=1.):
+    def __init__(self, size:int, *target_labels, heat=1., time_factor=None):
         """If initialized with target labels, the forward method will return cost matrices.
         Otherwise the label will be returned
         """
         super().__init__()
-        self.markov = ParametricMarkovMatrix(size, heat=heat)
+        if time_factor is not None:
+            self.markov = WarpedTimeParametricMarkovMatrix(size, heat=heat, time_factor=time_factor)
+        else:
+            self.markov = ParametricMarkovMatrix(size, heat=heat)
         match target_labels:
             case [int(label_size)]:
                 self.label = nn.Parameter(torch.randn(size, label_size))
@@ -143,7 +170,7 @@ class ParametricMarkovMatrixWithLabels(nn.Module):
                 for other in self.others]
     
     def get(self) -> tuple[Tensor, ...]:
-        return self.markov(), self.label
+        return self.markov.get(), self.label
     
     def update_others(self):
         if self.others is None:

@@ -1,0 +1,12 @@
+- grakel_name: PROTEINS
+  attr_type: discrete
+- grakel_name: MUTAG
+  attr_type: discrete
+- grakel_name: PTC_MR
+  attr_type: discrete
+- grakel_name: PROTEINS_full
+  attr_type: continuous
+- grakel_name: ENZYMES
+  attr_type: continuous
+# - grakel_name: REDDIT-BINARY
+#   attr_type: 
