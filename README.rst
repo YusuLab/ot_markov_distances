@@ -88,6 +88,19 @@ readthedocs format
 Running Experiments
 -------------------
 
+Running experiments requires installing development dependencies. This can be done by running
+
+.. code:: console
+
+   $ make .make/dev-deps
+
+or alternatively
+
+.. code:: console
+
+   $ poetry install --with dev
+
+
 `Experiments <Experiments>`__ can be found in the ``experiments/``
 directory (see `Project structure <#project-structure>`__ ).
 
