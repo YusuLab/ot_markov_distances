@@ -107,6 +107,6 @@ directory (see `Project structure <#project-structure>`__ ).
 The Barycenter and Coarsening experiments can be found in
 ``experiments/Barycenter.ipynb`` and ``experiments/Coarsening.ipynb``.
 
-.. |github workflow badge| image:: https://github.com/tbrugere/ot_markov_distances/actions/workflows/testing-and-docs.yml/badge.svg
-.. |codecov| image:: https://codecov.io/gh/tbrugere/ot_markov_distances/branch/main/graph/badge.svg?token=MXZ41FHRC4
-   :target: https://codecov.io/gh/tbrugere/ot_markov_distances
+.. |github workflow badge| image:: https://github.com/YusuLab/ot_markov_distances/actions/workflows/testing-and-docs.yml/badge.svg
+.. |codecov| image:: https://codecov.io/gh/YusuLab/ot_markov_distances/branch/main/graph/badge.svg
+   :target: https://codecov.io/gh/YusuLab/ot_markov_distances
