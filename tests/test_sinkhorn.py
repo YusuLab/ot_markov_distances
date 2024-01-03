@@ -39,10 +39,6 @@ def test_sinkhorn_distance(n, m, p):
     c = abs(l1[:, :, None] - l2[:, None, :]).squeeze()
     epsilon=.001
     
-    print(MX.shape)
-    print(MY.shape)
-    print(l1.shape)
-    print(l2.shape)
     
     # pot = (ot_sinkhorn_log(mx, my, c, reg=epsilon) * c).sum()
     pot_emd = (emd(mx, my, c) * c).sum()
