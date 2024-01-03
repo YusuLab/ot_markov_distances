@@ -1,7 +1,7 @@
 ot_markov_distances
 ===================
 
-|github workflow badge| |codecov|
+|github workflow badge| |codecov| |pytorch badge| 
 
 Distances on graphs based on optimal transport
 
@@ -110,3 +110,6 @@ The Barycenter and Coarsening experiments can be found in
 .. |github workflow badge| image:: https://github.com/YusuLab/ot_markov_distances/actions/workflows/testing-and-docs.yml/badge.svg
 .. |codecov| image:: https://codecov.io/gh/YusuLab/ot_markov_distances/branch/main/graph/badge.svg
    :target: https://codecov.io/gh/YusuLab/ot_markov_distances
+.. |pytorch badge| image:: https://img.shields.io/badge/PyTorch-%23EE4C2C.svg?style=for-the-badge&logo=PyTorch&logoColor=white
+.. |doc badge| image:: https://img.shields.io/badge/documentation-green?style=for-the-badge&logo=readme&logoColor=black
+   :target: https://tristan.bruge.re/documentation/ot_markov_distances
