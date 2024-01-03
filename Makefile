@@ -8,6 +8,8 @@ RUN_IN_ENV=poetry run
 ALL_SOURCE_FILES=$(shell find $(PACKAGE) -type f)
 ALL_DOC_SOURCE_FILES=$(shell find staticdocs -type f)
 
+README=$(shell ls -1 README.* | head -n 1 | tr -d '\n')
+
 # timestamp directory
 .make:
 	mkdir -p $@
@@ -15,6 +17,8 @@ ALL_DOC_SOURCE_FILES=$(shell find staticdocs -type f)
 all: .make/build-docs .make/run-tests
 
 run-tests: .make/run-tests
+
+doc: .make/build-docs
 
 .make/run-tests coverage.xml: .make/deps .make/test-deps |.make
 	$(RUN_IN_ENV) pytest --cov=$(PACKAGE) --cov-report xml
@@ -34,7 +38,7 @@ run-tests: .make/run-tests
 # publish-docs: docgen
 # 	aws s3 cp "docs/build/html/" s3://$(S3_DOCS_BUCKET) --recursive
 
-.make/build-docs: .make/docs-dir .make/autodoc docs/source/README.md .make/docs-deps | .make
+.make/build-docs: .make/docs-dir .make/autodoc docs/source/$(README) .make/docs-deps | .make
 	$(RUN_IN_ENV) $(MAKE) -C docs html
 	touch $@
 
@@ -46,8 +50,8 @@ run-tests: .make/run-tests
 	$(RUN_IN_ENV) sphinx-apidoc -f -T -e -o  docs/source $(PACKAGE)
 	touch $@
 
-docs/source/README.md: .make/docs-dir ./README.md 
-	cp ./README.md docs/source/README.md
+docs/source/$(README): .make/docs-dir ./$(README) 
+	cp ./$(README) docs/source/$(README)
 
 
 # nbconvert: docs-dir dev-deps
@@ -70,4 +74,4 @@ clean:
 	rm -rf .make
 
 
-.PHONY: clean run-tests
+.PHONY: clean run-tests doc

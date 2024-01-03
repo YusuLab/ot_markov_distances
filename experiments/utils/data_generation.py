@@ -1,13 +1,24 @@
 from typing import Literal
 import math
 
-
 import networkx as nx
 import sklearn.neighbors 
 import torch
 import numpy as np
 from numpy.random import default_rng
 rng = default_rng()
+
+def get_oriented_circle(n, doubled_edges=1):
+    G = nx.DiGraph()
+    angles = np.linspace(0, 2*np.pi, n)
+    x = np.cos(angles)
+    y = np.sin(angles)
+    coords = np.stack([x, y], axis=-1)
+    for node_index, node_coords in zip(range(n), coords):
+        G.add_node(node_index, attr=node_coords, pos=node_coords)
+        for i in range(1, doubled_edges+1):
+            G.add_edge((node_index - i) % n, node_index)
+    return G
 
 def circle_sample(n, radius=1, noise=.01):
     #we add gaussian noise of size radius * noise

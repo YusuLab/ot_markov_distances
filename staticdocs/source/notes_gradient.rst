@@ -1,7 +1,7 @@
 Notes on Gradient computation
 =============================
 
-We compute the gradient using the technique described in :cite:t:`brugere2023markov`.
+We compute the gradient using the technique described in :cite:t:`brugere2023distances`.
 
 But we push the formulae a little further to simplify the computation:
 

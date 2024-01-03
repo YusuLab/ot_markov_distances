@@ -1,13 +1,23 @@
+import os
+import torch
+from .modules import ParametricMarkovMatrixWithLabels, ParametricMarkovMatrixWithMatchings
+
+from torch.utils.tensorboard import SummaryWriter
+from tqdm.auto import trange
+
+from ot_markov_distances.discounted_wl import discounted_wl_infty
+
 def opt_loop_batched(target_matrices, 
              n_steps=300, projection_size=5, 
              run_name="barycenter", 
-             device = torch.device("cpu"), 
+            device = torch.device("cuda:0"), 
              lr=1e-2, 
              weight_decay=0,
              heat=1.,
              matching_heat=1.,
              wl_parameters = dict(delta=.5, sinkhorn_reg=.01, x_is_sparse=False, y_is_sparse=True),
-             labels = None
+             labels = None,
+            time_factor=None, 
             ):
     
     n_targets = len(target_matrices)
@@ -21,7 +31,7 @@ def opt_loop_batched(target_matrices,
                                                          heat=heat,
                                                         matching_heat=matching_heat).to(device)
     else:
-        projection = ParametricMarkovMatrixWithLabels(projection_size, *labels, heat=heat).to(device)
+        projection = ParametricMarkovMatrixWithLabels(projection_size, *labels, heat=heat, time_factor=time_factor).to(device)
                                         
 
     target_measures = [
@@ -45,7 +55,7 @@ def opt_loop_batched(target_matrices,
         batched_Ds = torch.stack(Ds, dim=0)
         batched_M = M.expand(n_targets, -1, -1)
         
-        loss = wl_reg_infty(batched_M, 
+        loss = discounted_wl_infty(batched_M, 
                             target_matrices_batched, 
                             batched_Ds, 
                             muX=projection_measure,
