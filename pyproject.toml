@@ -49,6 +49,7 @@ tensorboard = "^2.15.1"
 scikit-image = "^0.22.0"
 more-itertools = "^10.1.0"
 grakel = "^0.1.10"
+torch-geometric = "^2.4.0"
 
 [build-system]
 requires = ["poetry-core"]

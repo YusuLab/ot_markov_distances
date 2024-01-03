@@ -3989,6 +3989,35 @@ url = "https://download.pytorch.org/whl/cu118"
 reference = "pytorch-cu118"
 
 [[package]]
+name = "torch-geometric"
+version = "2.4.0"
+description = "Graph Neural Network Library for PyTorch"
+optional = false
+python-versions = ">=3.8"
+files = [
+    {file = "torch_geometric-2.4.0-py3-none-any.whl", hash = "sha256:9d8eb5eec44382f4072aa5e835450f144e9edb9d164627e532e311880b6bdad0"},
+    {file = "torch_geometric-2.4.0.tar.gz", hash = "sha256:343c6906d0678f16553c2d02b7267d0ec77eafb5b44324070ebcf7da8a934557"},
+]
+
+[package.dependencies]
+jinja2 = "*"
+numpy = "*"
+psutil = ">=5.8.0"
+pyparsing = "*"
+requests = "*"
+scikit-learn = "*"
+scipy = "*"
+tqdm = "*"
+
+[package.extras]
+benchmark = ["matplotlib", "networkx", "pandas", "protobuf (<4.21)", "wandb"]
+dev = ["pre-commit", "torch_geometric[test]"]
+full = ["ase", "captum", "graphviz", "h5py", "matplotlib", "networkx", "numba", "opt_einsum", "pandas", "pgmpy", "pynndescent", "pytorch-memlab", "rdflib", "rdkit", "scikit-image", "statsmodels", "sympy", "tabulate", "torch_geometric[graphgym,modelhub]", "torchmetrics", "trimesh"]
+graphgym = ["hydra-core", "protobuf (<4.21)", "pytorch-lightning", "yacs"]
+modelhub = ["huggingface_hub"]
+test = ["onnx", "onnxruntime", "pytest", "pytest-cov"]
+
+[[package]]
 name = "tornado"
 version = "6.4"
 description = "Tornado is a Python web framework and asynchronous networking library, originally developed at FriendFeed."
@@ -4204,4 +4233,4 @@ files = [
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.10"
-content-hash = "8fbab55bf5f70bb4eb10d8d40d96636567a83bd6032fb4ac0a4a62f01c6ce448"
+content-hash = "c1fcd5340805f079ca1ee0f13a608cdca6fe113d2440c7bd3a63eeac0f5d2923"
