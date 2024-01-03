@@ -1,7 +1,7 @@
 ot_markov_distances
 ===================
 
-|github workflow badge| |codecov| |pytorch badge| 
+|github workflow badge| |codecov| |doc badge| |pytorch badge| 
 
 Distances on graphs based on optimal transport
 
