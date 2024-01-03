@@ -117,6 +117,8 @@ directory (see `Project structure <#project-structure>`__ ).
 The Barycenter and Coarsening experiments can be found in
 ``experiments/Barycenter.ipynb`` and ``experiments/Coarsening.ipynb``.
 
+The performance graphs are computed in  ``experiments/Performance.ipynb``
+
 Classification experiment
 ^^^^^^^^^^^^^^^^^^^^^^^^^
 
