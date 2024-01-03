@@ -6,6 +6,7 @@ import sklearn.neighbors
 import torch
 import numpy as np
 from numpy.random import default_rng
+from ot_markov_distances.utils import weighted_transition_matrix, draw_markov
 rng = default_rng()
 
 def get_oriented_circle(n, doubled_edges=1):
@@ -19,6 +20,18 @@ def get_oriented_circle(n, doubled_edges=1):
         for i in range(1, doubled_edges+1):
             G.add_edge((node_index - i) % n, node_index)
     return G
+
+def gen_noisy_oriented_circles(n_targets, target_size, er_p=.05, doubled_edges=2):
+    graphs = [get_oriented_circle(target_size, doubled_edges) for _ in range(n_targets)]
+    graphs = [add_er_noise(graph, p=er_p) for graph in graphs]
+    markovs = torch.stack([weighted_transition_matrix(graph, 0) for graph in graphs])
+    distributions = torch.ones(n_targets, target_size) / target_size
+    labels = torch.as_tensor(np.asarray(
+        [[i for i in nx.get_node_attributes(graph, "attr").values()
+            ] for graph in graphs ]
+         ), dtype=torch.float32)
+    return graphs, markovs, distributions, labels
+
 
 def circle_sample(n, radius=1, noise=.01):
     #we add gaussian noise of size radius * noise
