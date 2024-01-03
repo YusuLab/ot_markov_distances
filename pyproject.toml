@@ -47,6 +47,7 @@ seaborn = "^0.12.2"
 pandas = "^1.5.3"
 tensorboard = "^2.15.1"
 scikit-image = "^0.22.0"
+more-itertools = "^10.1.0"
 
 [build-system]
 requires = ["poetry-core"]

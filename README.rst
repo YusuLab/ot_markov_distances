@@ -107,6 +107,11 @@ directory (see `Project structure <#project-structure>`__ ).
 The Barycenter and Coarsening experiments can be found in
 ``experiments/Barycenter.ipynb`` and ``experiments/Coarsening.ipynb``.
 
+Classification experiment
+^^^^^^^^^^^^^^^^^^^^^^^^^
+
+The Classification experiment (see the first paragraph of section 6 in the paper) is not in a jupyter notebook, but accessible via a command line. 
+
 .. |github workflow badge| image:: https://github.com/YusuLab/ot_markov_distances/actions/workflows/testing-and-docs.yml/badge.svg
 .. |codecov| image:: https://codecov.io/gh/YusuLab/ot_markov_distances/branch/main/graph/badge.svg
    :target: https://codecov.io/gh/YusuLab/ot_markov_distances
