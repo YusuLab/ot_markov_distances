@@ -4,7 +4,7 @@ version = "0.1.0"
 description = ""
 authors = ["Tristan BRUGÈRE <67050900+nephanth@users.noreply.github.com>"]
 license = "Cecill-B"
-readme = "README.md"
+readme = "README.rst"
 packages = [{include = "ot_markov_distances"}]
 
 [[tool.poetry.source]]

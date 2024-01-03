@@ -15,8 +15,7 @@ Welcome to ot_markov_distances's documentation!
    notes_gradient
    ot_markov_distances
 
-.. include:: README.md
-   :parser: myst_parser.sphinx_
+.. include:: README.rst
 
 
 Indices and tables
