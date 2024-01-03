@@ -1,7 +1,7 @@
 """
 This module contains the implementation of the discounted wl distance
 for the paper "Distances for Markov Chains, and Their Differentiation" 
-:cite:`brugere2023markov`
+:cite:`brugere2023distances`
 """
 from .sinkhorn import sinkhorn as sinkhorn_distance
 from .wl import wl_k, markov_measure
