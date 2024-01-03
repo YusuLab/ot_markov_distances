@@ -101,7 +101,7 @@ or alternatively
    $ poetry install --with dev
 
 
-`Experiments <Experiments>`__ can be found in the ``experiments/``
+`Experiments <experiments>`__ can be found in the ``experiments/``
 directory (see `Project structure <#project-structure>`__ ).
 
 The Barycenter and Coarsening experiments can be found in
