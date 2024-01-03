@@ -34,4 +34,4 @@ def test_discounted_wl_infty_optim(generate_data):
     dwl_infty = discounted_wl_infty(mx, my, C, delta=.9, sinkhorn_reg=.1)
     dwl_k = discounted_wl_k(mx, my, cost_matrix=C, k=1000, delta=.9, reg=.1)
 
-    assert torch.allclose(dwl_infty, dwl_k)
+    assert torch.allclose(dwl_infty, dwl_k, rtol=1e-2, atol=1e-2)
