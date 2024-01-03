@@ -127,6 +127,25 @@ As an additional dependency it needs `tudataset`, which is not installable via `
 
 .. _`the tudataset repo`: https://github.com/chrsmrrs/tudataset
 
+Now you can run the classification experiment using the command
+
+.. code:: console
+   $ poetry run python -m experiments.classification
+   usage: python -m experiments.classification [-h] {datasets_info,distances,eval} ...
+
+   Run classification experiments on graph datasets
+
+   positional arguments:
+     {datasets_info,distances,eval}
+       datasets_info       Print information about given datasets
+       distances           Compute distance matrices for given datasets
+       eval                Evaluate a kernel based on distance matrix
+
+   options:
+     -h, --help            show this help message and exit
+
+The yaml file containing dataset information that should be passed to the command line is in `experiments/grakel_datasets.yaml`. 
+Modifying this file should allow running the experiment on different datasets.
 
 
 .. |github workflow badge| image:: https://github.com/YusuLab/ot_markov_distances/actions/workflows/testing-and-docs.yml/badge.svg
