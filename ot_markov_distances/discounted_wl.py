@@ -407,14 +407,17 @@ def discounted_wl_infty(
     return sinkhorn(muX, muY, cost_matrix, sinkhorn_reg)
 
 def discounted_wl_k(MX: Tensor, MY: Tensor, 
-        l1: Tensor, l2: Tensor,
+        l1: Tensor|None = None, 
+        l2: Tensor|None = None,
+        *, 
+        cost_matrix: Tensor | None = None,
+        delta: Tensor|float = .4, 
         k: int,
         muX: Tensor | None = None,
         muY: Tensor | None = None, 
-        reg: float=.0001, 
-        delta: float = .1,
-        sinkhorn_iter: int= 100,
-        return_differences:bool= False,
+        reg: float=.1, 
+        sinkhorn_parameters: dict = dict(), 
+        return_differences: bool=False, 
         ):
     r"""computes the discounted WL distance
 
@@ -431,34 +434,41 @@ def discounted_wl_k(MX: Tensor, MY: Tensor,
         MY: (b, m, m) second transition tensor
         l1: (b, n,) label values for the first space
         l2: (b, m,) label values for the second space
+        cost_matrix: (b, n, m) allows specifying the cost matrix instead
         k: number of steps (k parameter for the WL distance)
-        muX: stationary distribution for MX (if omitted, will be recomuputed)
-        muY: stationary distribution for MY (if omitted, will be recomuputed)
+        muX: distribution for MX (if omitted, the stationary distrubution will be used)
+        muY: distribution for MY (if omitted, the stationary distrubution will be used)
         reg: regularization parameter for sinkhorn
-        sinkhorn_iter: number of sinkhorn iterations for a step
     """
     b, n, n_ = MX.shape
     b_, m, m_ = MY.shape
     assert (n==n_) and (m == m_) and (b == b_)
     one_minus_delta = 1 - delta
 
-    distance_matrix = (l1[:, :, None] - l2[:, None, :]).abs()
-    cost_matrix = delta * distance_matrix
+    if cost_matrix is None:
+        assert (l1 is not None) and (l2 is not None)
+        cost_matrix = (l1[:, :, None] - l2[:, None, :]).abs()
+    distance_matrix = cost_matrix
+    delta_distance_matrix = delta * distance_matrix
+    cost_matrix = delta_distance_matrix
 
     
     if return_differences:
         differences = []
+    else:
+        differences = None
     debug_time()
     for i in range(k):
-        new_cost_matrix = delta * distance_matrix \
+        new_cost_matrix = delta_distance_matrix \
             + one_minus_delta * sinkhorn(
                 MX[:, :, None, :], # b, n, 1, n
                 MY[:, None, :, :], # b, 1, m, m
                 cost_matrix[:, None, None, :, :], # b, 1, 1, n, m
                 epsilon=reg, 
-                k= sinkhorn_iter
+                **sinkhorn_parameters
         ) # b, n, m
         if return_differences:
+            assert differences is not None
             differences.append(F.mse_loss(new_cost_matrix, cost_matrix))
             
         cost_matrix = new_cost_matrix 
@@ -469,5 +479,6 @@ def discounted_wl_k(MX: Tensor, MY: Tensor,
     if muY is None:
         muY = markov_measure(MY)
     if return_differences:
+        assert differences is not None
         return sinkhorn(muX, muY, cost_matrix, reg), differences
     return sinkhorn(muX, muY, cost_matrix, reg)

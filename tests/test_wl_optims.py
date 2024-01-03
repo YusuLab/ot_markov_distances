@@ -8,7 +8,7 @@ from experiments.utils.data_generation import circle_graph
 
 import torch
 
-@pytest.fixture(params=[(2, 17, 23, 10), (5, 9, 11, 22), (10, 5, 7, 3)])
+@pytest.fixture(params=[(1, 2, 3, 10), (2, 17, 23, 10), (5, 9, 11, 22), (10, 5, 7, 3)])
 def generate_data(batch_size= 2, n1 = 17, n2 = 23, label_size=10):
     test_sizes=[n1] * batch_size
     test_graphs = [circle_graph(size, kind="nn", k=2) for size in test_sizes]
@@ -22,7 +22,7 @@ def generate_data(batch_size= 2, n1 = 17, n2 = 23, label_size=10):
     lx = torch.rand((batch_size, n1, label_size))
     ly = torch.rand((batch_size, n2, label_size))
     # C = torch.rand((batch_size, n1, n2)) * 5
-    C = torch.abs(lx[:, :, None] - ly[:, None, :]) 
+    C = torch.square(lx[:, :, None] - ly[:, None, :]).sum(-1) 
 
     return mx, my, lx, ly, C
 
@@ -31,7 +31,7 @@ def generate_data(batch_size= 2, n1 = 17, n2 = 23, label_size=10):
 def test_discounted_wl_infty_optim(generate_data):
     mx, my, lx, ly, C = generate_data
 
-    dwl_infty = discounted_wl_infty(mx, my, C)
-    dwl_k = discounted_wl_k(mx, my, l1=lx, l2=ly, k=1000)
+    dwl_infty = discounted_wl_infty(mx, my, C, delta=.9, sinkhorn_reg=.1)
+    dwl_k = discounted_wl_k(mx, my, cost_matrix=C, k=1000, delta=.9, reg=.1)
 
     assert torch.allclose(dwl_infty, dwl_k)
