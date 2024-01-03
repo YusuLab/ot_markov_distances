@@ -39,6 +39,9 @@ or directly with poetry
 
    $ poetry install
 
+The `TUDataset` package is also needed to run the classification experiment, but it is not available via `pip` / `poetry`. 
+To install it, follow the instruction in `the tudataset repo`_.
+
 Project structure
 ~~~~~~~~~~~~~~~~~
 
@@ -112,9 +115,16 @@ Classification experiment
 
 The Classification experiment (see the first paragraph of section 6 in the paper) is not in a jupyter notebook, but accessible via a command line. 
 
+As an additional dependency it needs `tudataset`, which is not installable via `pip`. To install it follow the instructions in `the tudataset repo`_.
+
+.. _`the tudataset repo`: https://github.com/chrsmrrs/tudataset
+
+
+
 .. |github workflow badge| image:: https://github.com/YusuLab/ot_markov_distances/actions/workflows/testing-and-docs.yml/badge.svg
 .. |codecov| image:: https://codecov.io/gh/YusuLab/ot_markov_distances/branch/main/graph/badge.svg
    :target: https://codecov.io/gh/YusuLab/ot_markov_distances
 .. |pytorch badge| image:: https://img.shields.io/badge/PyTorch-%23EE4C2C.svg?style=for-the-badge&logo=PyTorch&logoColor=white
 .. |doc badge| image:: https://img.shields.io/badge/documentation-green?style=for-the-badge&logo=readme&logoColor=black
    :target: https://tristan.bruge.re/documentation/ot_markov_distances
+
