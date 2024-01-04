@@ -132,6 +132,7 @@ As an additional dependency it needs `tudataset`, which is not installable via `
 Now you can run the classification experiment using the command
 
 .. code:: console
+
    $ poetry run python -m experiments.classification
    usage: python -m experiments.classification [-h] {datasets_info,distances,eval} ...
 
