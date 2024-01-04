@@ -75,7 +75,7 @@ Project structure
 Documentation
 -------------
 
-The documentation is available online: `read the documentation <tristan.bruge.re/documentation/ot_markov_distances>`_
+The documentation is available online: `read the documentation <http://tristan.bruge.re/documentation/ot_markov_distances>`_
 
 .. warning::
    Do not edit the documentation directly in the ``docs/`` folder,
