@@ -5,7 +5,7 @@ ot_markov_distances
 
 Distances on graphs based on optimal transport
 
-This is the implementation code for :cite:t:`brugere2023distances`.
+This is the implementation code for 
 
 ::
 
