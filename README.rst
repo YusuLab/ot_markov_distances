@@ -17,6 +17,18 @@ Setup
 Dependencies
 ~~~~~~~~~~~~
 
+Python version
+^^^^^^^^^^^^^^
+
+This project requires ``python 3.10`` *a minima*. 
+If your python version is prior to ``3.10``, 
+you need to update (or to create a new ``conda`` environment) 
+to a version above (latest release at the time of writing is ``3.12``)
+
+
+Python dependencies 
+^^^^^^^^^^^^^^^^^^^
+
 .. note::
    The main branch uses ``cuda11.8`` in its dependencies. If for some
    reason you need to use ``cuda12``, clone the ``cuda12`` branch
@@ -29,6 +41,12 @@ dependencies is available in the file ``pyproject.toml``)
 
 When you have ``poetry``, you can add dependencies using our makefile
 
+.. note::
+   If you want to create a virtual environment for this project 
+   (as opposed to using the one you are currently in)
+   you can use the command `poetry env use python3.11`
+   (or other )
+
 .. code:: console
 
    $ make .make/deps
@@ -39,7 +57,14 @@ or directly with poetry
 
    $ poetry install
 
-The ``TUDataset`` package is also needed to run the classification experiment, but it is not available via ``pip`` / ``poetry``. 
+
+TUDataset
+^^^^^^^^^
+
+*If you are planning to reproduce the classification experiment.*
+
+The ``TUDataset`` package is also needed to run the classification experiment, 
+but it is not available via ``pip`` / ``poetry``. 
 To install it, follow the instruction in `the tudataset repo`_, 
 including the "Compilation of kernel baselines" section, and add the directory where you downloaded it to your ``$PYTHONPATH``.
 eg:
