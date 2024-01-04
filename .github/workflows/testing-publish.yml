@@ -51,6 +51,8 @@ jobs:
         uses: actions/download-artifact@v3
         with:
           name: dist
+      - name: list files
+        run: find
       - name: publish package
         uses: pypa/gh-action-pypi-publish@release/v1
         with:
