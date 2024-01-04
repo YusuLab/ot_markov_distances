@@ -44,8 +44,8 @@ When you have ``poetry``, you can add dependencies using our makefile
 .. note::
    If you want to create a virtual environment for this project 
    (as opposed to using the one you are currently in)
-   you can use the command `poetry env use python3.11`
-   (or other )
+   you can use the command ``poetry env use python3.12``
+   (or other python version)
 
 .. code:: console
 
