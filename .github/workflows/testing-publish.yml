@@ -31,5 +31,7 @@ jobs:
           token: ${{ secrets.CODECOV_TOKEN }}
           files: ./coverage.xml
           verbose: true
-
-
+      - name: Build package
+        run: poetry build
+      - name: publish package
+        run: poetry publish
