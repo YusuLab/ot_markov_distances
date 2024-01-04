@@ -9,7 +9,7 @@ The depth-:math:`k` version can be computed with the function :func:`wl_reg_k`.
 # from typing import Literal
 import warnings
 
-from ml_lib.misc import all_equal, debug_time
+from .misc import all_equal, debug_time
 import torch
 from torch import Tensor, FloatTensor
 from torch.nn import functional as F

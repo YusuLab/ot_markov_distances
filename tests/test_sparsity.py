@@ -1,7 +1,7 @@
 import pytest
 import itertools as it
 
-from ml_lib.misc import all_equal
+from ot_markov_distances.misc import all_equal
 from ot_markov_distances import discounted_wl_infty, sinkhorn_distance
 from ot_markov_distances.utils import weighted_transition_matrix, densify, reindex_cost_matrix, cost_matrix_index
 from experiments.utils.data_generation import circle_graph

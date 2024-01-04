@@ -5,8 +5,7 @@ from torch import nn, Tensor
 from torch.nn import functional as F
 import numpy as np
 
-from ml_lib.misc import auto_repr, all_equal
-
+from ot_markov_distances.misc import auto_repr, all_equal
 from ot_markov_distances.utils import draw_markov
 
 @auto_repr("size")

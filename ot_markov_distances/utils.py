@@ -2,7 +2,7 @@ import torch
 from torch import Tensor, LongTensor, FloatTensor, BoolTensor
 import networkx as nx
 
-from ml_lib.misc import all_equal
+from .misc import all_equal
 
 def weighted_transition_matrix(G:nx.Graph, q: float):
     """Create a LMMC from a Graph
