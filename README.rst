@@ -14,6 +14,15 @@ This is the implementation code for :cite:t:`brugere2023distances`.
 Setup
 -----
 
+Installing as a library
+~~~~~~~~~~~~~~~~~~~~~~~
+
+The ``ot_markov_distances`` package can be installed with the following command:
+
+.. code:: console
+
+   pip install git+https://github.com/YusuLab/ot_markov_distances
+
 Dependencies
 ~~~~~~~~~~~~
 
@@ -178,7 +187,7 @@ Modifying this file should allow running the experiment on different datasets.
 
 .. _`the tudataset repo`: https://github.com/chrsmrrs/tudataset
 
-.. |github workflow badge| image:: https://github.com/YusuLab/ot_markov_distances/actions/workflows/testing-and-docs.yml/badge.svg
+.. |github workflow badge| image:: https://github.com/YusuLab/ot_markov_distances/actions/workflows/testing-publish.yml/badge.svg
 .. |codecov| image:: https://codecov.io/gh/YusuLab/ot_markov_distances/branch/main/graph/badge.svg
    :target: https://codecov.io/gh/YusuLab/ot_markov_distances
 .. |pytorch badge| image:: https://img.shields.io/badge/PyTorch-%23EE4C2C.svg?style=for-the-badge&logo=PyTorch&logoColor=white
