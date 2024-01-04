@@ -120,7 +120,7 @@ The Barycenter and Coarsening experiments can be found in
 The performance graphs are computed in  ``experiments/Performance.ipynb``
 
 Classification experiment
-^^^^^^^^^^^^^^^^^^^^^^^^^
+~~~~~~~~~~~~~~~~~~~~~~~~~
 
 The Classification experiment (see the first paragraph of section 6 in the paper) is not in a jupyter notebook, but accessible via a command line. 
 
