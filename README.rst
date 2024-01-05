@@ -3,7 +3,7 @@ ot_markov_distances
 
 |github workflow badge| |codecov| |doc badge| |pytorch badge| 
 
-Distances on graphs based on optimal transport
+Differentiable distances on graphs based on optimal transport
 
 This is the implementation code for 
 
@@ -21,7 +21,7 @@ The ``ot_markov_distances`` package can be installed with the following command:
 
 .. code:: console
 
-   pip install ot_markov_distances
+   pip install ot-markov-distances
 
 If for some reason you need to use ``cuda11.8`` (ie you are installing ``torch+cuda118``)
 then use the following command instead
