@@ -19,7 +19,7 @@ jobs:
       - name: print branches and status
         run: git branch && git status
       - name: rebase cu118 onto main
-        run: git rebase main
+        run: git rebase origin/main
       - name: push changes
         uses: ad-m/github-push-action@master
         with:
