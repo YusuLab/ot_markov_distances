@@ -39,8 +39,9 @@ Python dependencies
 ^^^^^^^^^^^^^^^^^^^
 
 .. note::
-   The main branch uses ``cuda11.8`` in its dependencies. If for some
-   reason you need to use ``cuda12``, clone the ``cuda12`` branch
+   The main branch uses the default (``cuda12``) version of torch 
+   in its dependencies. If for some
+   reason you need to use ``cuda11.8``, clone the ``cuda118`` branch
    instead
 
 This package manages its dependencies via
