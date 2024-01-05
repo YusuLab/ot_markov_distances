@@ -16,11 +16,14 @@ jobs:
         with:
           ref: cuda118
           fetch-depth: 0
+      - name: print branches and status
+        run: git branch && git status
       - name: rebase cu118 onto main
         run: git rebase main
       - name: push changes
         uses: ad-m/github-push-action@master
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
-          branch: ${{ github.ref }}
+          branch: cuda118
+          force_with_lease: true
 
