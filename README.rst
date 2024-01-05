@@ -212,7 +212,7 @@ Or if you have fixed it, you can submit a Pull Request directly
 I cannot install the library
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-If you followed all the instructions correctly, please create a ticket using Github "Issues".
+If you followed all the instructions correctly, please create a ticket using Github Issues.
 
 
 Why do you need ``python3.10`` ?
