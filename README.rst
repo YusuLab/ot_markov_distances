@@ -193,6 +193,35 @@ Now you can run the classification experiment using the command
 The yaml file containing dataset information that should be passed to the command line is in ``experiments/grakel_datasets.yaml``. 
 Modifying this file should allow running the experiment on different datasets.
 
+FAQ
+---
+
+I have a question about the paper
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+In this case just send me an email through the email address mentioned in the paper.
+
+I have noticed a bug in the code
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Please use the Github "Issues" feature to open a ticket, and post a description of the bug, the error message and a
+`minimal reproducible example <https://en.wikipedia.org/wiki/Minimal_reproducible_example>`_ . I’ll try to fix it.
+
+Or if you have fixed it, you can submit a Pull Request directly
+
+I cannot install the library
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+If you followed all the instructions correctly, please create a ticket using Github "Issues".
+
+
+Why do you need ``python3.10`` ?
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Because I am using `structural pattern matching <https://peps.python.org/pep-0634/>`_, and some typing features such as `this one <https://peps.python.org/pep-0604/>`_ .
+
+
+
 .. _`the tudataset repo`: https://github.com/chrsmrrs/tudataset
 
 .. |github workflow badge| image:: https://github.com/YusuLab/ot_markov_distances/actions/workflows/testing-publish.yml/badge.svg
