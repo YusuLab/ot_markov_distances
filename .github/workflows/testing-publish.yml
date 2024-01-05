@@ -3,9 +3,9 @@ name: Tests
 
 on:
   push:
-    branches: ["main", "cu12"]
+    branches: ["main"]
   pull_request:
-    branches: ["main", "cu12"]
+    branches: ["main"]
 
 permissions:
   contents: read
