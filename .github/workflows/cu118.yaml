@@ -1,0 +1,26 @@
+name: Reflect changes in the cu118 branch
+
+on:
+  push:
+    branches: ["main"]
+
+permissions:
+  contents: write
+
+jobs:
+  merge_cu118:
+    runs-on: ubuntu-latest
+    steps:
+      - name: checkout
+        uses: actions/checkout@v3
+        with:
+          ref: cu118
+          fetch-depth: 0
+      - name: rebase cu118 onto main
+        run: git rebase main
+      - name: push changes
+        uses: ad-m/github-push-action@master
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          branch: ${{ github.ref }}
+
