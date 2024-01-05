@@ -21,7 +21,14 @@ The ``ot_markov_distances`` package can be installed with the following command:
 
 .. code:: console
 
-   pip install git+https://github.com/YusuLab/ot_markov_distances
+   pip install ot_markov_distances
+
+If for some reason you need to use ``cuda11.8`` (ie you are installing ``torch+cuda118``)
+then use the following command instead
+
+.. code:: console
+
+   pip install git+https://github.com/YusuLab/ot_markov_distances@cuda118
 
 Dependencies
 ~~~~~~~~~~~~
