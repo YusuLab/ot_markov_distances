@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "ot-markov-distances"
-version = "1.0.2"
+version = "1.0.3"
 description = "Differentiable distances for graphs and markov chains using optimal transport"
 authors = ["Tristan BRUGÈRE <67050900+nephanth@users.noreply.github.com>"]
 license = "Cecill-B"
