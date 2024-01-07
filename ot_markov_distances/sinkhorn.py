@@ -12,6 +12,8 @@ from torch import Tensor
 
 from . import utils
 
+__all__ = ["sinkhorn_internal", "sinkhorn"]
+
 @overload
 def sinkhorn_internal(a: Tensor, b: Tensor, C: Tensor, 
                       epsilon: float, k: int=100, *, 

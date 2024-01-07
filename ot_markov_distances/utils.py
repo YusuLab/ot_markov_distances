@@ -1,3 +1,17 @@
+"""
+This module contains a lot of miscellanous functions.
+
+It contains
+
+- Functions on markov chains: :py:func:`weighted_transition_matrix` , :py:func:`weighted_transition_matrix`, :py:func:`degree_markov`
+- Display functions :py:func:`draw_markov`
+- Support for sparse markov chains: :py:func:`densify`, :py:func:`dummy_densify`, :py:func:`cost_matrix_index` etc.
+
+
+It would gain to be broken up into submodules, and merged with misc.py
+(as utils.markov, utils.display, utils.misc, utils.sparse)
+(TODO for a next version)
+"""
 import torch
 from torch import Tensor, LongTensor, FloatTensor, BoolTensor
 import networkx as nx

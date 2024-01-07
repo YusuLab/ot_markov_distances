@@ -12,6 +12,7 @@ Welcome to ot_markov_distances's documentation!
    :name: mastertoc
    
    self
+   basic_usage
    notes_gradient
    ot_markov_distances
 
